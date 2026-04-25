@@ -1,35 +1,38 @@
 "use client"
-
-import { Select } from "@/components/inputs/select";
+import ConfirmModal from "@/components/modals/confirmModal";
+import { useState } from "react";
+import { FaExclamation } from "react-icons/fa";
 
 
 export default function Home() {
-  const options = [
-    { label: "São Paulo", value: "SP" },
-    { label: "Rio de Janeiro", value: "RJ" },
-    { label: "Minas Gerais", value: "MG" },
-  ];
+
+  const [open, setOpen] = useState(false);
+
+  function handleConfirm() {
+    console.log("Confirmado!");
+    setOpen(false);
+  }
+
+  function handleCancel() {
+    setOpen(false);
+  }
 
   return (
     <div className="container-fluid">
-      <div className="row">
-        <div className="col-lg-3">
-          <Select
-            id={"teste"}
-            label={"Pesquisar"}
-            options={options}
-            value={{ label: "", value: "" }}
-            onChange={function (e) {
 
-            }}
-            placeholder={"Pesquisar aqui..."}
-            isDisabled={false}
-            isClearable={true}
-            className=""
-          />
-        </div>
-      </div>
+      <button onClick={() => setOpen(true)}>
+        Abrir confirmação
+      </button>
 
+      <ConfirmModal
+        isOpen={open}
+        message="Tem certeza que deseja excluir este item?"
+        icon={<FaExclamation color="red"/>}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        confirmLabel="Sim"
+        cancelLabel="Não"
+      />
     </div>
   );
 }
