@@ -1,0 +1,19 @@
+.custom-nav-link {
+    transition: all 0.2s ease;
+    border-radius: 6px;
+}
+
+/* 🖱️ Hover */
+.custom-nav-link:hover {
+    background-color: #495057 !important;
+}
+
+/* 🎯 Ativo */
+.custom-nav-link.active {
+    background-color: #495057 !important;
+}
+
+.custom-nav-link:hover {
+    background-color: #495057 !important;
+    padding-left: 12px;
+}

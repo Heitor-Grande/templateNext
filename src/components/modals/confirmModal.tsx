@@ -24,8 +24,8 @@ export default function ConfirmModal({
     onConfirm,
     onCancel,
 
-    confirmLabel = "Confirmar",
-    cancelLabel = "Cancelar",
+    confirmLabel,
+    cancelLabel,
 }: ConfirmModalProps) {
     const [isMounted, setIsMounted] = useState(false);
 
