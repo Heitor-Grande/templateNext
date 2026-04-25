@@ -17,9 +17,6 @@ export default function RootLayout({
       <body>
         <div className="d-flex">
 
-          {/* Sidebar fixa */}
-          <Sidebar />
-
           {/* Conteúdo dinâmico (tipo Outlet) */}
           <main className="flex-grow-1 p-4">
             {children}
