@@ -69,7 +69,7 @@ export default function ConfirmModal({
                                 onClick={onCancel}
                                 disabled={false}
                                 loading={false}
-                                variant="danger"
+                                variant="primary"
                                 type="button"
                                 className="w-100"
                             />
@@ -82,7 +82,7 @@ export default function ConfirmModal({
                                 onClick={onConfirm}
                                 disabled={false}
                                 loading={false}
-                                variant="primary"
+                                variant="danger"
                                 type="button"
                                 className="w-100"
                             />
