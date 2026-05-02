@@ -16,7 +16,11 @@ interface InputProps {
     classNameHelpText?: "form-text text-muted" | "form-text text-danger"
 };
 
-export function Input({
+/**
+ * Campo de texto controlado do template.
+ * Use em formularios para padronizar label, estado desabilitado, obrigatoriedade e texto de ajuda.
+ */
+export function CampoTexto({
     id,
     label,
     type,

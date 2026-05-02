@@ -2,21 +2,31 @@
 
 import { useState } from "react";
 
-export function useLoading() {
+/**
+ * Hook simples para controle de loading.
+ * Use em componentes que precisam expor iniciarCarregamento/pararCarregamento sem repetir estado local.
+ */
+export function useCarregamento() {
 
     const [loading, setLoading] = useState<boolean>(false);
 
-    function startLoading(): void {
+    /**
+     * Ativa o estado de carregamento.
+     */
+    function iniciarCarregamento(): void {
         setLoading(true);
     }
 
-    function stopLoading(): void {
+    /**
+     * Desativa o estado de carregamento.
+     */
+    function pararCarregamento(): void {
         setLoading(false);
     }
 
     return {
         loading,
-        startLoading,
-        stopLoading
+        iniciarCarregamento,
+        pararCarregamento
     }
 }

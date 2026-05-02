@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Sidebar from "@/components/layout/sideBar";
+import "./cssGlobal.css";
 
 export const metadata: Metadata = {
   title: "Template",
-  description: "Template para criação de novas aplicações.",
+  description: "Template para criacao de novas aplicacoes.",
 };
 
-export default function RootLayout({
+/**
+ * Layout raiz da aplicacao.
+ * Use para imports globais, metadados e estrutura comum compartilhada por todas as rotas.
+ */
+export default function LayoutRaiz({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -17,7 +21,7 @@ export default function RootLayout({
       <body>
         <div className="d-flex">
 
-          {/* Conteúdo dinâmico (tipo Outlet) */}
+          {/* Conteudo dinamico da rota atual. */}
           <main className="flex-grow-1 p-4">
             {children}
           </main>

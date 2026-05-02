@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { ReactNode } from "react";
 import { Modal } from "react-bootstrap";
-import { Button } from "../inputs/button";
+import { Botao } from "../inputs/button";
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -16,7 +16,11 @@ interface ConfirmModalProps {
     cancelLabel: string;
 }
 
-export default function ConfirmModal({
+/**
+ * Modal generico de confirmacao.
+ * Use antes de acoes destrutivas ou irreversiveis, delegando a regra de negocio para onConfirm/onCancel.
+ */
+export default function ModalConfirmacao({
     isOpen,
     message,
     icon,
@@ -27,21 +31,12 @@ export default function ConfirmModal({
     confirmLabel,
     cancelLabel,
 }: ConfirmModalProps) {
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    if (!isMounted) return null;
-
     return (
         <Modal show={isOpen} onHide={onCancel} centered size="sm">
             <Modal.Body>
                 <div className="container-fluid">
                     <div className="row">
                         <div className="col-12 text-center">
-                            {/* Ícone */}
                             {icon && (
                                 <div>
                                     {icon}
@@ -49,7 +44,6 @@ export default function ConfirmModal({
                             )}
                         </div>
                         <div className="col-12 text-center mt-2">
-                            {/* Mensagem */}
                             <p className="mb-0">
                                 <b>{message}</b>
                             </p>
@@ -62,8 +56,7 @@ export default function ConfirmModal({
                 <div className="container-fluid">
                     <div className="row">
                         <div className="col-lg-6 text-center">
-                            {/* Cancelar (vermelho) */}
-                            <Button
+                            <Botao
                                 size="sm"
                                 label={cancelLabel}
                                 onClick={onCancel}
@@ -75,8 +68,7 @@ export default function ConfirmModal({
                             />
                         </div>
                         <div className="col-lg-6 text-center">
-                            {/* Confirmar (azul) */}
-                            <Button
+                            <Botao
                                 size="sm"
                                 label={confirmLabel}
                                 onClick={onConfirm}

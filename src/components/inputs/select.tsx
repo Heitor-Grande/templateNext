@@ -19,7 +19,11 @@ interface SelectProps {
     className: string;
 };
 
-export function Select({
+/**
+ * Seletor controlado baseado em react-select.
+ * Use quando a tela precisar de opcoes pesquisaveis, limpaveis ou com experiencia melhor que um select nativo.
+ */
+export function Seletor({
     id,
     label,
     options,

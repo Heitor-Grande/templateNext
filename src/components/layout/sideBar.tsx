@@ -2,67 +2,78 @@
 
 import { Nav } from "react-bootstrap";
 import Link from "next/link";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+    FaBars,
+    FaChevronDown,
+    FaChevronRight,
+    FaCog,
+    FaHome,
+    FaList,
+    FaTimes,
+    FaUsers,
+} from "react-icons/fa";
 
 type MenuItem = {
     label: string;
     href?: string;
+    icon: ReactNode;
     children?: MenuItem[];
 };
 
-function MenuItemComponent({ item }: { item: MenuItem }) {
-    const [open, setOpen] = useState(false);
-    const [hover, setHover] = useState(false);
+/**
+ * Item recursivo do menu lateral.
+ * Use internamente na BarraLateral para renderizar links simples e grupos com filhos.
+ */
+function ItemMenuLateral({
+    item,
+    aoNavegar,
+}: {
+    item: MenuItem;
+    aoNavegar: () => void;
+}) {
+    const [aberto, setAberto] = useState(false);
     const pathname = usePathname();
 
-    const hasChildren = item.children && item.children.length > 0;
-    const isActive = item.href && pathname === item.href;
+    const possuiFilhos = item.children && item.children.length > 0;
+    const estaAtivo = item.href && pathname === item.href;
 
-    const background = isActive || hover ? "#495057" : "transparent";
-
-    if (!hasChildren) {
+    if (!possuiFilhos) {
         return (
             <Nav.Item>
                 <Link
                     href={item.href || "#"}
-                    className="nav-link text-white"
-                    style={{
-                        backgroundColor: background,
-                        borderRadius: "6px",
-                        transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={() => setHover(true)}
-                    onMouseLeave={() => setHover(false)}
+                    className={`sidebar-link ${estaAtivo ? "active" : ""}`}
+                    onClick={aoNavegar}
                 >
-                    {item.label}
+                    <span className="sidebar-link-icon">{item.icon}</span>
+                    <span>{item.label}</span>
                 </Link>
             </Nav.Item>
         );
     }
 
     return (
-        <div>
-            <div
-                className="nav-link text-white d-flex justify-content-between align-items-center"
-                style={{
-                    cursor: "pointer",
-                    backgroundColor: background,
-                    borderRadius: "6px",
-                    transition: "all 0.2s ease",
-                }}
-                onClick={() => setOpen(!open)}
-                onMouseEnter={() => setHover(true)}
-                onMouseLeave={() => setHover(false)}
+        <div className="sidebar-group">
+            <button
+                type="button"
+                className={`sidebar-link sidebar-link-button ${aberto ? "active" : ""}`}
+                onClick={() => setAberto(!aberto)}
             >
-                {item.label}
-                <span>{open ? "▲" : "▼"}</span>
-            </div>
+                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="flex-grow-1 text-start">{item.label}</span>
+                {aberto ? <FaChevronDown /> : <FaChevronRight />}
+            </button>
 
-            {open && (
-                <Nav className="flex-column ms-3">
-                    {item.children!.map((child, index) => (
-                        <MenuItemComponent key={index} item={child} />
+            {aberto && (
+                <Nav className="sidebar-submenu">
+                    {item.children!.map((child) => (
+                        <ItemMenuLateral
+                            key={`${item.label}-${child.label}`}
+                            item={child}
+                            aoNavegar={aoNavegar}
+                        />
                     ))}
                 </Nav>
             )}
@@ -70,70 +81,97 @@ function MenuItemComponent({ item }: { item: MenuItem }) {
     );
 }
 
-export default function Sidebar() {
-    const [open, setOpen] = useState(false);
+/**
+ * Barra lateral responsiva do template.
+ * Use como base de navegacao lateral em aplicacoes internas com menus simples ou agrupados.
+ */
+export default function BarraLateral() {
+    const [aberta, setAberta] = useState(false);
 
     const versaoApp = "1.0.0";
 
     const menus: MenuItem[] = [
-        { label: "Dashboard", href: "/" },
+        { label: "Dashboard", href: "/menuPrincipal", icon: <FaHome /> },
         {
-            label: "Usuários",
+            label: "Usuarios",
+            icon: <FaUsers />,
             children: [
-                { label: "Listar", href: "/usuarios" },
-                { label: "Cadastrar", href: "/usuarios/novo" },
+                { label: "Listar", href: "/usuarios", icon: <FaList /> },
             ],
         },
-        { label: "Configurações", href: "/configuracoes" },
+        { label: "Configuracoes", href: "/configuracoes", icon: <FaCog /> },
     ];
+
+    function abrirBarraLateral() {
+        setAberta(true);
+    }
+
+    function fecharBarraLateral() {
+        setAberta(false);
+    }
 
     return (
         <>
-            {/* NAVBAR */}
-            <nav className="navbar navbar-dark bg-dark fixed-top px-3">
+            {/* Barra superior mobile para abrir a navegacao lateral. */}
+            <nav className="sidebar-topbar">
                 <button
-                    className="btn btn-dark"
-                    onClick={() => setOpen(true)}
+                    type="button"
+                    className="sidebar-icon-button"
+                    onClick={abrirBarraLateral}
+                    aria-label="Abrir menu"
                 >
-                    ☰
+                    <FaBars />
                 </button>
+
+                <span className="sidebar-topbar-brand">Template</span>
             </nav>
 
-            {/* OVERLAY */}
-            {open && (
-                <div
-                    className="position-fixed top-0 start-0 w-100 h-100 bg-dark"
-                    style={{ opacity: 0.5, zIndex: 1040 }}
-                    onClick={() => setOpen(false)}
+            {/* Camada de fundo para fechar o menu ao clicar fora no mobile. */}
+            {aberta && (
+                <button
+                    type="button"
+                    className="sidebar-overlay"
+                    onClick={fecharBarraLateral}
+                    aria-label="Fechar menu"
                 />
             )}
 
-            {/* SIDEBAR */}
-            <div
-                className="d-flex flex-column bg-dark text-white p-3 vh-100 position-fixed"
-                style={{
-                    width: "250px",
-                    zIndex: 1050,
-                    top: 0,
-                    transform: open ? "translateX(0)" : "translateX(-100%)",
-                    transition: "transform 0.3s ease",
-                }}
-            >
-                {/* Espaço pra navbar */}
-                <div style={{ height: "56px" }} />
+            {/* Navegacao lateral fixa no desktop e drawer no mobile. */}
+            <aside className={`sidebar-shell ${aberta ? "open" : ""}`}>
+                <div className="sidebar-header">
+                    <div className="sidebar-brand">
+                        <span className="sidebar-brand-mark">T</span>
+                        <div>
+                            <strong>Template</strong>
+                            <small>Base App</small>
+                        </div>
+                    </div>
 
-                <h5 className="mb-4 text-center">Template</h5>
+                    <button
+                        type="button"
+                        className="sidebar-icon-button sidebar-close-button"
+                        onClick={fecharBarraLateral}
+                        aria-label="Fechar menu"
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
 
-                <Nav className="flex-column gap-1">
-                    {menus.map((item, index) => (
-                        <MenuItemComponent key={index} item={item} />
+                <Nav className="sidebar-nav">
+                    {menus.map((item) => (
+                        <ItemMenuLateral
+                            key={item.label}
+                            item={item}
+                            aoNavegar={fecharBarraLateral}
+                        />
                     ))}
                 </Nav>
 
-                <div className="mt-auto pt-3 border-top border-secondary">
-                    <small>v{versaoApp}</small>
+                <div className="sidebar-footer">
+                    <span>Versao</span>
+                    <strong>v{versaoApp}</strong>
                 </div>
-            </div>
+            </aside>
         </>
     );
 }

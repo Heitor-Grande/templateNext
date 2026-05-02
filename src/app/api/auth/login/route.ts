@@ -1,0 +1,105 @@
+import { randomUUID } from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { consultarBancoDados } from "@/services/database";
+import { validarHash } from "@/utils/criptografia";
+import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
+
+type LoginBody = {
+    email?: unknown;
+    password?: unknown;
+};
+
+type UsuarioLogin = {
+    id: string;
+    email: string;
+    senha_hash: string;
+    salt: string;
+    ativo: boolean;
+};
+
+/**
+ * Resposta padronizada para falhas de autenticacao.
+ * Use mensagem generica para nao revelar se o e-mail existe ou qual campo falhou.
+ */
+function criarRespostaCredenciaisInvalidas() {
+    return NextResponse.json(
+        {
+            success: false,
+            message: "E-mail ou senha invalidos.",
+        },
+        { status: 401 }
+    );
+}
+
+/**
+ * Endpoint POST de login.
+ * Valida entrada, autentica pelo banco e grava a sessao em cookie httpOnly sem retornar token ao front.
+ */
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json() as LoginBody;
+        const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
+        const password = validarStringComConteudo(body.password) ? body.password : "";
+
+        if (!validarEmail(email) || !password) {
+            return criarRespostaCredenciaisInvalidas();
+        }
+
+        const resultadoUsuario = await consultarBancoDados<UsuarioLogin>(
+            `
+                select
+                    id,
+                    email,
+                    senha_hash,
+                    salt,
+                    ativo
+                from usuarios
+                where lower(email) = $1
+                limit 1
+            `,
+            [email]
+        );
+
+        const usuario = resultadoUsuario.rows[0];
+
+        if (!usuario || !usuario.ativo || !validarHash(password, usuario.senha_hash, usuario.salt)) {
+            return criarRespostaCredenciaisInvalidas();
+        }
+
+        const resposta = NextResponse.json(
+            {
+                success: true,
+                message: "Login realizado com sucesso.",
+            },
+            { status: 200 }
+        );
+
+        resposta.cookies.set("app_session", randomUUID(), {
+            httpOnly: true,
+            secure: process.env.AMBIENTE === "PROD",
+            sameSite: "lax",
+            path: "/",
+            maxAge: process.env.COOKIE_MAX_AGE ? parseInt(process.env.COOKIE_MAX_AGE) : 3600,
+        });
+
+        return resposta;
+    } catch (erro) {
+        if (erro instanceof SyntaxError) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Requisicao invalida.",
+                },
+                { status: 400 }
+            );
+        }
+
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Nao foi possivel realizar o login.",
+            },
+            { status: 500 }
+        );
+    }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button as RBButton } from "react-bootstrap";
+import { Button as BotaoBootstrap } from "react-bootstrap";
 import { ReactNode } from "react";
 
 type ButtonProps = {
@@ -15,7 +15,11 @@ type ButtonProps = {
     className: string;
 };
 
-export function Button({
+/**
+ * Botao base do template.
+ * Use para manter botoes Bootstrap com suporte padrao a icone, loading e estado desabilitado.
+ */
+export function Botao({
     size,
     label,
     icon,
@@ -27,7 +31,7 @@ export function Button({
     className,
 }: ButtonProps) {
     return (
-        <RBButton
+        <BotaoBootstrap
             size={size}
             variant={variant}
             onClick={onClick}
@@ -37,6 +41,6 @@ export function Button({
         >
             {icon && <span>{icon}</span>}
             {label && <span>{label}</span>}
-        </RBButton>
+        </BotaoBootstrap>
     );
 }
