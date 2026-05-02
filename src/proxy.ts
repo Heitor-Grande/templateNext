@@ -28,7 +28,7 @@ export function proxy(request: NextRequest) {
     }
 
     if (caminho.startsWith("/api")) {
-        return criarRespostaApi(false, "Sessao invalida ou expirada.", null, 401);
+        return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
     }
 
     return NextResponse.redirect(new URL("/", request.url));
