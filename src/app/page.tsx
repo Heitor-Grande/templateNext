@@ -1,5 +1,7 @@
 "use client";
 
+import { Botao } from "@/components/inputs/button";
+import { CampoTexto } from "@/components/inputs/input";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
@@ -9,15 +11,13 @@ import {
   FaArrowRight,
   FaChartLine,
   FaCheckCircle,
-  FaLock,
   FaRocket,
   FaShieldAlt,
-  FaUser,
 } from "react-icons/fa";
 
 /**
  * Pagina inicial do template com landing page e login.
- * Use como ponto de partida para apresentar a aplicacao e autenticar o usuario.
+ * Use como ponto de partida para apresentar a aplicação e autenticar o usuário.
  */
 export default function PaginaInicial() {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function PaginaInicial() {
     } catch (erro) {
       const mensagemErro = erro instanceof Error
         ? erro.message
-        : "Nao foi possivel conectar ao servidor.";
+        : "Não foi possível conectar ao servidor.";
 
       setLoginMessage(mensagemErro);
     } finally {
@@ -80,11 +80,11 @@ export default function PaginaInicial() {
               </span>
 
               <h1 className="display-5 fw-bold text-white mb-3">
-                Comece sua proxima aplicacao com uma estrutura pronta para evoluir.
+                Comece sua próxima aplicação com uma estrutura pronta para evoluir.
               </h1>
 
               <p className="lead text-white-50 mb-4">
-                Um template com componentes, modais, hooks e padroes essenciais para acelerar o desenvolvimento de sistemas web.
+                Um template com componentes, modais, hooks e padrões essenciais para acelerar o desenvolvimento de sistemas web.
               </p>
 
               <div className="d-flex flex-wrap gap-3">
@@ -101,7 +101,7 @@ export default function PaginaInicial() {
               <div className="login-card">
                 <div className="mb-4">
                   <p className="text-muted small text-uppercase fw-semibold mb-1">
-                    Area segura
+                    Área segura
                   </p>
                   <h2 className="h3 fw-bold mb-1">Acesse sua conta</h2>
                   <p className="text-muted mb-0">
@@ -110,61 +110,46 @@ export default function PaginaInicial() {
                 </div>
 
                 <form onSubmit={enviarFormularioLogin}>
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">
-                      E-mail
-                    </label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <FaUser />
-                      </span>
-                      <input
-                        id="email"
-                        type="email"
-                        className="form-control"
-                        placeholder="voce@empresa.com"
-                        value={email}
-                        onChange={(event) => {
-                          setEmail(event.target.value);
-                          setLoginMessage("");
-                        }}
-                        disabled={loading}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-2">
-                    <label htmlFor="password" className="form-label">
-                      Senha
-                    </label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <FaLock />
-                      </span>
-                      <input
-                        id="password"
-                        type="password"
-                        className="form-control"
-                        placeholder="Digite sua senha"
-                        value={password}
-                        onChange={(event) => {
-                          setPassword(event.target.value);
-                          setLoginMessage("");
-                        }}
-                        disabled={loading}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary w-100 btn-lg"
+                  <CampoTexto
+                    id="email"
+                    label="E-mail"
+                    type="email"
+                    value={email}
+                    placeholder="email@empresa.com"
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      setLoginMessage("");
+                    }}
                     disabled={loading}
-                  >
-                    Entrar
-                  </button>
+                    required
+                    className="mb-3"
+                  />
+
+                  <CampoTexto
+                    id="password"
+                    label="Senha"
+                    type="password"
+                    value={password}
+                    placeholder="Digite sua senha"
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setLoginMessage("");
+                    }}
+                    disabled={loading}
+                    required
+                    className="mb-2"
+                  />
+
+                  <Botao
+                    size="lg"
+                    label="Entrar"
+                    onClick={() => undefined}
+                    disabled={loading}
+                    loading={false}
+                    variant="primary"
+                    type="submit"
+                    className="w-100"
+                  />
                 </form>
               </div>
             </div>
@@ -178,9 +163,9 @@ export default function PaginaInicial() {
             <div className="col-md-4">
               <div className="feature-card h-100">
                 <FaCheckCircle className="feature-icon text-primary" />
-                <h3 className="h5 fw-bold mt-3">Componentes reutilizaveis</h3>
+                <h3 className="h5 fw-bold mt-3">Componentes reutilizáveis</h3>
                 <p className="text-muted mb-0">
-                  Inputs, botoes e modais prontos para padronizar novas telas.
+                  Inputs, botões e modais prontos para padronizar novas telas.
                 </p>
               </div>
             </div>
@@ -190,7 +175,7 @@ export default function PaginaInicial() {
                 <FaShieldAlt className="feature-icon text-success" />
                 <h3 className="h5 fw-bold mt-3">Base consistente</h3>
                 <p className="text-muted mb-0">
-                  Organizacao pensada para services, hooks e utils compartilhados.
+                  Organização pensada para services, hooks e utils compartilhados.
                 </p>
               </div>
             </div>
@@ -200,7 +185,7 @@ export default function PaginaInicial() {
                 <FaChartLine className="feature-icon text-danger" />
                 <h3 className="h5 fw-bold mt-3">Pronto para crescer</h3>
                 <p className="text-muted mb-0">
-                  Estrutura simples para evoluir de prototipo para produto.
+                  Estrutura simples para evoluir de protótipo para produto.
                 </p>
               </div>
             </div>

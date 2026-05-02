@@ -12,8 +12,8 @@ interface ResponseModalProps {
 };
 
 /**
- * Modal generico de resposta ao usuario.
- * Use para exibir mensagens de sucesso, erro ou aviso retornadas por fluxos da aplicacao.
+ * Modal genérico de resposta ao usuário.
+ * Use para exibir mensagens de sucesso, erro ou aviso retornadas por fluxos da aplicação.
  */
 export default function ModalResposta({
     isOpen,

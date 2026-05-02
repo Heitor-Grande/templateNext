@@ -1,7 +1,8 @@
 "use client";
 
-import { ColunaTabelaDados, TabelaDados } from "@/components/tables/dataTable";
+import { Botao } from "@/components/inputs/button";
 import ModalResposta from "@/components/modals/responseModal";
+import { ColunaTabelaDados, TabelaDados } from "@/components/tables/dataTable";
 import { requisitarAPI } from "@/utils/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
@@ -18,8 +19,8 @@ type UsuarioTabela = {
 };
 
 /**
- * Pagina de listagem de usuarios.
- * Use como referencia para telas de cadastro que precisam consumir API e renderizar a TabelaDados.
+ * Página de listagem de usuários.
+ * Use como referência para telas de cadastro que precisam consumir API e renderizar a TabelaDados.
  */
 export default function PaginaUsuarios() {
     const [usuarios, setUsuarios] = useState<UsuarioTabela[]>([]);
@@ -52,7 +53,7 @@ export default function PaginaUsuarios() {
     ];
 
     /**
-     * Carrega os usuarios cadastrados na API.
+     * Carrega os usuários cadastrados na API.
      * Use ao abrir a tela e sempre que a listagem precisar ser atualizada.
      */
     const carregarUsuariosCadastrados = useCallback(async () => {
@@ -69,7 +70,7 @@ export default function PaginaUsuarios() {
         } catch (erro) {
             const mensagemErro = erro instanceof Error
                 ? erro.message
-                : "Nao foi possivel carregar os usuarios.";
+                : "Não foi possível carregar os usuários.";
 
             setMensagemResposta(mensagemErro);
         } finally {
@@ -88,21 +89,35 @@ export default function PaginaUsuarios() {
     return (
         <div className="container-fluid">
             <div className="page-header">
-                <div>
-                    <h1 className="h3 fw-bold mb-1">Usuarios</h1>
-                    <p className="text-muted mb-0">
-                        Consulte os usuarios cadastrados na aplicacao.
-                    </p>
+                <div className="card w-100">
+                    <div className="card-header">
+                        <h4 className="mb-1">Usuários</h4>
+                    </div>
+                    <div className="card-body">
+                        <div className="container-fluid">
+                            <div className="row">
+                                <div className="col-lg-10 col-md-3 col-sm">
+                                    <p className="text-muted mb-0">
+                                        Consulte os usuários cadastrados na aplicação.
+                                    </p>
+                                </div>
+                                <div className="col-lg-2 col-md-3 col-sm">
+                                    <Botao
+                                        size="sm"
+                                        label="Novo usuário"
+                                        icon={<FaPlus size={14} />}
+                                        onClick={() => setModalCadastroAberto(true)}
+                                        disabled={carregando}
+                                        loading={carregando}
+                                        variant="outline-primary"
+                                        type="button"
+                                        className="w-100"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => setModalCadastroAberto(true)}
-                >
-                    <FaPlus className="me-2" />
-                    Novo usuario
-                </button>
             </div>
 
             <TabelaDados
@@ -110,7 +125,7 @@ export default function PaginaUsuarios() {
                 dados={usuarios}
                 carregando={carregando}
                 mensagemSemDados="Nenhum usuário cadastrado."
-                placeholderFiltro="Procurar por Usuário"
+                placeholderFiltro="Procurar por usuário"
             />
 
             <ModalCadastroUsuario

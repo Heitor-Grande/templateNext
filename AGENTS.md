@@ -181,6 +181,7 @@ Antes de criar uma nova validacao, verifique se ela pertence a esse arquivo ou s
 - `src/app/layout.tsx` deve manter configuracoes globais e estrutura comum.
 - Estilos globais ficam em `src/app/cssGlobal.css`.
 - Evite transformar `page.tsx` em catalogo permanente de exemplos. Exemplos podem existir temporariamente, mas o template deve iniciar limpo e facil de adaptar.
+- Telas que usarem `TabelaDados` devem seguir o padrao de montagem de `src/app/(app)/usuarios/page.tsx`: cabecalho simples com titulo, descricao e acao principal com `Botao`; carregamento via `requisitarAPI`; erros exibidos com `ModalResposta`; e tabela renderizada pelo componente `TabelaDados`.
 
 ## Estilo e TypeScript
 
@@ -189,6 +190,7 @@ Antes de criar uma nova validacao, verifique se ela pertence a esse arquivo ou s
 - Evite `any`; use tipos especificos ou generics quando necessario.
 - Nao adicione bibliotecas novas sem necessidade clara para o template.
 - Preserve o padrao visual Bootstrap ja adotado.
+- Mantenha portugues correto em textos visiveis, mensagens de API, placeholders, metadados e comentarios. Use acentos e grafia correta, por exemplo: `aplicação`, `usuário`, `não`, `possível`, `requisição`, `sessão`.
 - Comentarios devem explicar decisoes ou trechos nao obvios, nao repetir o que o codigo ja diz.
 - Funcoes e componentes devem possuir comentarios explicando seu uso e sua utilidade no template. Prefira comentarios curtos em formato JSDoc acima da funcao ou componente.
 - Nomes de funcoes devem ser escritos em portugues e deixar claro o que a funcao faz. Evite nomes genericos como `handle`, `process`, `execute` ou abreviacoes sem contexto.

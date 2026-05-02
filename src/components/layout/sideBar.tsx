@@ -1,5 +1,6 @@
 "use client";
 
+import { Botao } from "@/components/inputs/button";
 import { Nav } from "react-bootstrap";
 import Link from "next/link";
 import { ReactNode, useState } from "react";
@@ -56,15 +57,18 @@ function ItemMenuLateral({
 
     return (
         <div className="sidebar-group">
-            <button
+            <Botao
+                size="sm"
+                label={item.label}
+                icon={<span className="sidebar-link-icon">{item.icon}</span>}
+                iconRight={aberto ? <FaChevronDown /> : <FaChevronRight />}
                 type="button"
+                variant="link"
                 className={`sidebar-link sidebar-link-button ${aberto ? "active" : ""}`}
                 onClick={() => setAberto(!aberto)}
-            >
-                <span className="sidebar-link-icon">{item.icon}</span>
-                <span className="flex-grow-1 text-start">{item.label}</span>
-                {aberto ? <FaChevronDown /> : <FaChevronRight />}
-            </button>
+                disabled={false}
+                loading={false}
+            />
 
             {aberto && (
                 <Nav className="sidebar-submenu">
@@ -83,7 +87,7 @@ function ItemMenuLateral({
 
 /**
  * Barra lateral responsiva do template.
- * Use como base de navegacao lateral em aplicacoes internas com menus simples ou agrupados.
+ * Use como base de navegação lateral em aplicações internas com menus simples ou agrupados.
  */
 export default function BarraLateral() {
     const [aberta, setAberta] = useState(false);
@@ -99,7 +103,7 @@ export default function BarraLateral() {
                 { label: "Listar", href: "/usuarios", icon: <FaList /> },
             ],
         },
-        { label: "Configuracoes", href: "/configuracoes", icon: <FaCog /> },
+        { label: "Configurações", href: "/configuracoes", icon: <FaCog /> },
     ];
 
     function abrirBarraLateral() {
@@ -114,25 +118,32 @@ export default function BarraLateral() {
         <>
             {/* Barra superior mobile para abrir a navegacao lateral. */}
             <nav className="sidebar-topbar">
-                <button
+                <Botao
+                    size="sm"
+                    icon={<FaBars />}
                     type="button"
+                    variant="link"
                     className="sidebar-icon-button"
                     onClick={abrirBarraLateral}
-                    aria-label="Abrir menu"
-                >
-                    <FaBars />
-                </button>
+                    disabled={false}
+                    loading={false}
+                    ariaLabel="Abrir menu"
+                />
 
                 <span className="sidebar-topbar-brand">Template</span>
             </nav>
 
             {/* Camada de fundo para fechar o menu ao clicar fora no mobile. */}
             {aberta && (
-                <button
+                <Botao
+                    size="sm"
                     type="button"
+                    variant="link"
                     className="sidebar-overlay"
                     onClick={fecharBarraLateral}
-                    aria-label="Fechar menu"
+                    disabled={false}
+                    loading={false}
+                    ariaLabel="Fechar menu"
                 />
             )}
 
@@ -147,14 +158,17 @@ export default function BarraLateral() {
                         </div>
                     </div>
 
-                    <button
+                    <Botao
+                        size="sm"
+                        icon={<FaTimes />}
                         type="button"
+                        variant="link"
                         className="sidebar-icon-button sidebar-close-button"
                         onClick={fecharBarraLateral}
-                        aria-label="Fechar menu"
-                    >
-                        <FaTimes />
-                    </button>
+                        disabled={false}
+                        loading={false}
+                        ariaLabel="Fechar menu"
+                    />
                 </div>
 
                 <Nav className="sidebar-nav">
@@ -168,7 +182,7 @@ export default function BarraLateral() {
                 </Nav>
 
                 <div className="sidebar-footer">
-                    <span>Versao</span>
+                    <span>Versão</span>
                     <strong>v{versaoApp}</strong>
                 </div>
             </aside>

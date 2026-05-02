@@ -24,8 +24,8 @@ type CadastroUsuarioBody = {
 };
 
 /**
- * Endpoint GET de usuarios.
- * Use para alimentar tabelas de listagem sem retornar dados sensiveis como senha_hash.
+ * Endpoint GET de usuários.
+ * Use para alimentar tabelas de listagem sem retornar dados sensíveis como senha_hash.
  */
 export async function GET() {
     try {
@@ -44,15 +44,15 @@ export async function GET() {
             `
         );
 
-        return criarRespostaApi(true, "Usuarios listados com sucesso.", resultado.rows);
+        return criarRespostaApi(true, "Usuários listados com sucesso.", resultado.rows);
     } catch {
-        return criarRespostaApi<UsuarioListado[]>(false, "Nao foi possivel listar os usuarios.", [], 500);
+        return criarRespostaApi<UsuarioListado[]>(false, "Não foi possível listar os usuários.", [], 500);
     }
 }
 
 /**
- * Endpoint POST de usuarios.
- * Valida dados basicos, cria hash da senha e cadastra o usuario sem retornar dados sensiveis.
+ * Endpoint POST de usuários.
+ * Valida dados básicos, cria hash da senha e cadastra o usuário sem retornar dados sensíveis.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
         const documento = normalizarCampoOpcional(body.documento);
 
         if (!nome || !validarEmail(email) || senha.length < 6) {
-            return criarRespostaApi(false, "Informe nome, e-mail valido e senha com pelo menos 6 caracteres.", null, 400);
+            return criarRespostaApi(false, "Informe nome, e-mail válido e senha com pelo menos 6 caracteres.", null, 400);
         }
 
         if (senha !== confirmarSenha) {
-            return criarRespostaApi(false, "As senhas informadas nao conferem.", null, 400);
+            return criarRespostaApi(false, "As senhas informadas não conferem.", null, 400);
         }
 
         const senhaCriptografada = criarHash(senha);
@@ -97,16 +97,16 @@ export async function POST(request: NextRequest) {
             ]
         );
 
-        return criarRespostaApi(true, "Usuario cadastrado com sucesso.", null, 201);
+        return criarRespostaApi(true, "Usuário cadastrado com sucesso.", null, 201);
     } catch (erro) {
         if (erro instanceof SyntaxError) {
-            return criarRespostaApi(false, "Requisicao invalida.", null, 400);
+            return criarRespostaApi(false, "Requisição inválida.", null, 400);
         }
 
         if (erro instanceof Error && "code" in erro && erro.code === "23505") {
-            return criarRespostaApi(false, "Ja existe um usuario cadastrado com este e-mail.", null, 409);
+            return criarRespostaApi(false, "Já existe um usuário cadastrado com este e-mail.", null, 409);
         }
 
-        return criarRespostaApi(false, "Nao foi possivel cadastrar o usuario.", null, 500);
+        return criarRespostaApi(false, "Não foi possível cadastrar o usuário.", null, 500);
     }
 }

@@ -1,8 +1,8 @@
 import { randomBytes, scryptSync } from "crypto";
 
 /**
- * Cria um hash seguro para valores sensiveis.
- * Use quando o salt precisa ser armazenado em coluna separada para validacao futura.
+ * Cria um hash seguro para valores sensíveis.
+ * Use quando o salt precisa ser armazenado em coluna separada para validação futura.
  */
 export function criarHash(valor: string): { hash: string; salt: string } {
     const salt = randomBytes(16).toString("hex");

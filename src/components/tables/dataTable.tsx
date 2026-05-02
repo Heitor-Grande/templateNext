@@ -88,7 +88,7 @@ export function TabelaDados<T extends Record<string, unknown>>({
                 </div>
             </div>
 
-            <div className="table-responsive">
+            <div className="data-table-scroll">
                 <table className="table data-table align-middle mb-0">
                     <thead>
                         <tr>

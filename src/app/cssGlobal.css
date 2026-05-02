@@ -413,11 +413,18 @@ body {
 }
 
 .data-table-card {
-    overflow: hidden;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    contain: inline-size;
     border: 1px solid #dce3ec;
     border-radius: 8px;
     background-color: #fff;
     box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.06);
+    -webkit-overflow-scrolling: touch;
 }
 
 .data-table-toolbar {
@@ -462,6 +469,22 @@ body {
     background-color: #f8fafc;
 }
 
+.data-table-scroll {
+    display: block;
+    width: 100%;
+    min-width: 42rem;
+}
+
+.data-table {
+    width: 100%;
+    min-width: 0;
+}
+
+.data-table th,
+.data-table td {
+    white-space: nowrap;
+}
+
 @media (min-width: 992px) {
     .app-main-content {
         padding: 2rem 2rem 2rem 20rem;
@@ -488,4 +511,13 @@ body {
     .page-header .btn {
         width: 100%;
     }
+
+    .data-table-toolbar {
+        justify-content: stretch;
+    }
+
+    .data-table-filter {
+        width: 100%;
+    }
+
 }

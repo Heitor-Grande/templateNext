@@ -7,8 +7,8 @@ type PayloadJWT = JwtPayload & {
 };
 
 /**
- * Cria um JWT com id do usuario e data de login.
- * Use para gerar o valor do cookie de sessao da aplicacao.
+ * Cria um JWT com id do usuário e data de login.
+ * Use para gerar o valor do cookie de sessão da aplicação.
  */
 export function criarJWT(idUsuario: string): string {
     const segredo = obterSegredoJWT();
@@ -27,8 +27,8 @@ export function criarJWT(idUsuario: string): string {
 }
 
 /**
- * Valida se o JWT informado possui assinatura correta e ainda nao expirou.
- * Retorna true para tokens validos e false para tokens invalidos ou expirados.
+ * Valida se o JWT informado possui assinatura correta e ainda não expirou.
+ * Retorna true para tokens válidos e false para tokens inválidos ou expirados.
  */
 export function validarJWT(token: string): boolean {
     try {
@@ -44,7 +44,7 @@ function obterSegredoJWT(): string {
     const segredo = process.env.JWT_SECRET;
 
     if (!segredo) {
-        throw new Error("JWT_SECRET nao configurado.");
+        throw new Error("JWT_SECRET não configurado.");
     }
 
     return segredo;

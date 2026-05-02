@@ -13,7 +13,9 @@ interface InputProps {
     required: boolean;
     className: string;
     helpText?: string;
-    classNameHelpText?: "form-text text-muted" | "form-text text-danger"
+    classNameHelpText?: "form-text text-muted" | "form-text text-danger";
+    classNameInput?: string;
+    labelVisivel?: boolean;
 };
 
 /**
@@ -31,19 +33,24 @@ export function CampoTexto({
     required,
     className,
     helpText,
-    classNameHelpText
+    classNameHelpText,
+    classNameInput = "form-control",
+    labelVisivel = true,
 }: InputProps) {
     return (
         <div className={`form-group ${className}`}>
 
-            <label htmlFor={id}>
-                {label}
-            </label>
+            {labelVisivel && (
+                <label htmlFor={id}>
+                    {label}
+                </label>
+            )}
 
             <input
                 type={type}
-                className="form-control"
+                className={classNameInput}
                 id={id}
+                aria-label={!labelVisivel ? label : undefined}
                 placeholder={placeholder}
                 value={value}
                 disabled={disabled}

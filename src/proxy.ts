@@ -11,8 +11,8 @@ function rotaPublica(caminho: string): boolean {
 }
 
 /**
- * Proxy global de autenticacao.
- * Use para bloquear rotas protegidas quando o cookie de sessao nao possuir um JWT valido.
+ * Proxy global de autenticação.
+ * Use para bloquear rotas protegidas quando o cookie de sessão não possuir um JWT válido.
  */
 export function proxy(request: NextRequest) {
     const caminho = request.nextUrl.pathname;

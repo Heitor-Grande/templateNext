@@ -12,7 +12,7 @@ export type RespostaApi<TipoDados> = {
 };
 
 /**
- * Realiza requisicoes HTTP padronizadas para a aplicacao.
+ * Realiza requisições HTTP padronizadas para a aplicação.
  * Use para centralizar method, headers, body JSON e leitura da resposta.
  */
 export async function requisitarAPI(
@@ -38,7 +38,7 @@ export async function requisitarAPI(
     if (!resposta.ok) {
         const mensagemErro = typeof dados === "object" && dados !== null && "msg" in dados && typeof dados.msg === "string"
             ? dados.msg
-            : "Nao foi possivel concluir a requisicao.";
+            : "Não foi possível concluir a requisição.";
 
         throw new Error(mensagemErro);
     }

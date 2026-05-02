@@ -21,7 +21,7 @@ type UsuarioLogin = {
 };
 
 /**
- * Retorna a validade do cookie de sessao em segundos.
+ * Retorna a validade do cookie de sessão em segundos.
  * Use a variavel MAXAGE_COOKIE para manter o cookie alinhado com a validade do JWT.
  */
 function obterMaxAgeCookieSessao(): number {
@@ -31,16 +31,16 @@ function obterMaxAgeCookieSessao(): number {
 }
 
 /**
- * Resposta padronizada para falhas de autenticacao.
- * Use mensagem generica para nao revelar se o e-mail existe ou qual campo falhou.
+ * Resposta padronizada para falhas de autenticação.
+ * Use mensagem genérica para não revelar se o e-mail existe ou qual campo falhou.
  */
 function criarRespostaCredenciaisInvalidas() {
-    return criarRespostaApi(false, "E-mail ou senha invalidos.", null, 401);
+    return criarRespostaApi(false, "E-mail ou senha inválidos.", null, 401);
 }
 
 /**
  * Endpoint POST de login.
- * Valida entrada, autentica pelo banco e grava a sessao em cookie httpOnly sem retornar token ao front.
+ * Valida entrada, autentica pelo banco e grava a sessão em cookie httpOnly sem retornar token ao front.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
         return resposta;
     } catch (erro) {
         if (erro instanceof SyntaxError) {
-            return criarRespostaApi(false, "Requisicao invalida.", null, 400);
+            return criarRespostaApi(false, "Requisição inválida.", null, 400);
         }
 
-        return criarRespostaApi(false, "Nao foi possivel realizar o login.", null, 500);
+        return criarRespostaApi(false, "Não foi possível realizar o login.", null, 500);
     }
 }

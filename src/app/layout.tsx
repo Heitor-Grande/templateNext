@@ -4,11 +4,11 @@ import "./cssGlobal.css";
 
 export const metadata: Metadata = {
   title: "Template",
-  description: "Template para criacao de novas aplicacoes.",
+  description: "Template para criação de novas aplicações.",
 };
 
 /**
- * Layout raiz da aplicacao.
+ * Layout raiz da aplicação.
  * Use para imports globais, metadados e estrutura comum compartilhada por todas as rotas.
  */
 export default function LayoutRaiz({
@@ -22,7 +22,7 @@ export default function LayoutRaiz({
         <div className="d-flex">
 
           {/* Conteudo dinamico da rota atual. */}
-          <main className="flex-grow-1 p-4">
+          <main className="flex-grow-1 p-0">
             {children}
           </main>
 

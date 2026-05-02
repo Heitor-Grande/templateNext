@@ -33,8 +33,8 @@ const estadoInicialFormulario: DadosCadastroUsuario = {
 };
 
 /**
- * Modal local de cadastro de usuario.
- * Use apenas no fluxo de usuarios para coletar os dados basicos antes de enviar para a API.
+ * Modal local de cadastro de usuário.
+ * Use apenas no fluxo de usuários para coletar os dados básicos antes de enviar para a API.
  */
 export default function ModalCadastroUsuario({
     aberto,
@@ -52,15 +52,15 @@ export default function ModalCadastroUsuario({
     }
 
     /**
-     * Executa a regra de cadastro do usuario dentro do proprio modal.
-     * Use esta funcao para validar, chamar API e tratar resposta do fluxo de inclusao.
+     * Executa a regra de cadastro do usuário dentro do próprio modal.
+     * Use esta função para validar, chamar API e tratar resposta do fluxo de inclusão.
      */
     async function cadastrarUsuario(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setMensagemResposta("");
 
         if (formulario.senha !== formulario.confirmarSenha) {
-            setMensagemResposta("As senhas informadas nao conferem.");
+            setMensagemResposta("As senhas informadas não conferem.");
             return;
         }
 
@@ -75,7 +75,7 @@ export default function ModalCadastroUsuario({
             const mensagem =
                 typeof resposta.msg === "string"
                     ? resposta.msg
-                    : "Nao foi possivel cadastrar o usuario.";
+                    : "Não foi possível cadastrar o usuário.";
 
             setMensagemResposta(mensagem);
             setFormulario(estadoInicialFormulario);
@@ -83,7 +83,7 @@ export default function ModalCadastroUsuario({
         } catch (erro) {
             const mensagemErro = erro instanceof Error
                 ? erro.message
-                : "Nao foi possivel conectar ao servidor.";
+                : "Não foi possível conectar ao servidor.";
 
             setMensagemResposta(mensagemErro);
         } finally {
@@ -92,7 +92,7 @@ export default function ModalCadastroUsuario({
     }
 
     /**
-     * Fecha o modal e limpa o formulario para uma nova inclusao.
+     * Fecha o modal e limpa o formulário para uma nova inclusão.
      */
     function fecharModalCadastroUsuario() {
         setFormulario(estadoInicialFormulario);
@@ -105,7 +105,7 @@ export default function ModalCadastroUsuario({
         <>
             <Modal show={aberto} onHide={fecharModalCadastroUsuario} centered size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title className="fs-5">Novo usuario</Modal.Title>
+                    <Modal.Title className="fs-5">Novo usuário</Modal.Title>
                 </Modal.Header>
 
                 <form onSubmit={cadastrarUsuario}>
@@ -214,7 +214,7 @@ export default function ModalCadastroUsuario({
 
                         <Botao
                             size="sm"
-                            label="Salvar usuario"
+                            label="Salvar usuário"
                             icon={<FaSave />}
                             onClick={() => undefined}
                             disabled={false}
@@ -229,7 +229,7 @@ export default function ModalCadastroUsuario({
 
             <ModalCarregamento
                 show={carregando}
-                text="Cadastrando usuario..."
+                text="Cadastrando usuário..."
             />
 
             <ModalResposta
