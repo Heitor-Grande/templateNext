@@ -118,21 +118,40 @@ Quando o template precisar de um cliente HTTP base, prefira algo simples e facil
 
 ## Consultas à API no Frontend
 
-Use `async/await` com `fetch` configurando explicitamente `method` e `headers`. Para requisicoes com corpo, envie `body: JSON.stringify(...)`.
+Use `src/utils/api.ts` para chamadas do front para o back. Nao espalhe `fetch` diretamente em componentes, paginas ou hooks.
 
 Exemplo:
 
 ```ts
-const resposta = await fetch("/api/recurso", {
+const resposta = await requisitarAPI("/api/recurso", {
     method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    body: JSON.stringify(dados),
+    body: dados,
 });
 ```
 
 Mesmo em consultas `GET`, mantenha o `method` explicito para padronizar a leitura do codigo.
+
+Toda funcao do front que fizer requisicao ao back deve concentrar a chamada dentro de um unico bloco `try/catch`. Se cair no `catch`, exiba a mensagem usando `ModalResposta`.
+
+## Respostas de API
+
+Toda resposta de rota de API deve seguir o contrato:
+
+```ts
+{
+    sucesso: boolean;
+    msg: string;
+    dados: unknown | null;
+}
+```
+
+Use `src/utils/respostaApi.ts` para criar respostas padronizadas no back. O campo `dados` e obrigatorio e deve ser enviado como `null` quando nao houver conteudo para retornar.
+
+## Autenticacao e Proxy
+
+O arquivo `src/proxy.ts` valida o cookie `app_session` antes de liberar rotas protegidas. Use `validarJWT` de `src/utils/jwt.ts` para validar assinatura e expiracao do token.
+
+Mantenha rotas publicas explicitas dentro do proxy. Para APIs protegidas sem JWT valido, retorne resposta padronizada com status `401`; para paginas protegidas, redirecione para `/`.
 
 ## Utils
 

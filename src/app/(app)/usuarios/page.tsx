@@ -1,6 +1,8 @@
 "use client";
 
 import { ColunaTabelaDados, TabelaDados } from "@/components/tables/dataTable";
+import ModalResposta from "@/components/modals/responseModal";
+import { requisitarAPI } from "@/utils/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
 import ModalCadastroUsuario from "./components/modalCadastroUsuario";
@@ -22,7 +24,7 @@ type UsuarioTabela = {
 export default function PaginaUsuarios() {
     const [usuarios, setUsuarios] = useState<UsuarioTabela[]>([]);
     const [carregando, setCarregando] = useState(true);
-    const [mensagemErro, setMensagemErro] = useState("");
+    const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
 
     const colunas: ColunaTabelaDados<UsuarioTabela>[] = [
@@ -55,26 +57,21 @@ export default function PaginaUsuarios() {
      */
     const carregarUsuariosCadastrados = useCallback(async () => {
         setCarregando(true);
-        setMensagemErro("");
+        setMensagemResposta("");
 
         try {
-            const resposta = await fetch("/api/usuarios", {
+            const resposta = await requisitarAPI("/api/usuarios", {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
             });
 
-            const dados = await resposta.json();
+            setUsuarios(Array.isArray(resposta.dados) ? resposta.dados : []);
+            setMensagemResposta("");
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Nao foi possivel carregar os usuarios.";
 
-            if (!resposta.ok) {
-                throw new Error(dados.message || "Erro ao buscar usuarios.");
-            }
-
-            setUsuarios(Array.isArray(dados.usuarios) ? dados.usuarios : []);
-            setMensagemErro("");
-        } catch {
-            setMensagemErro("Nao foi possivel carregar os usuarios.");
+            setMensagemResposta(mensagemErro);
         } finally {
             setCarregando(false);
         }
@@ -108,12 +105,6 @@ export default function PaginaUsuarios() {
                 </button>
             </div>
 
-            {mensagemErro && (
-                <div className="alert alert-danger" role="alert">
-                    {mensagemErro}
-                </div>
-            )}
-
             <TabelaDados
                 colunas={colunas}
                 dados={usuarios}
@@ -127,6 +118,12 @@ export default function PaginaUsuarios() {
                     setModalCadastroAberto(false);
                     carregarUsuariosCadastrados();
                 }}
+            />
+
+            <ModalResposta
+                isOpen={Boolean(mensagemResposta)}
+                message={mensagemResposta}
+                onClose={() => setMensagemResposta("")}
             />
         </div>
     );

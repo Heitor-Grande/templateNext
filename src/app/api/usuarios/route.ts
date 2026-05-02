@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { normalizarCampoOpcional, validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 import { criarHash } from "@/utils/criptografia";
+import { criarRespostaApi } from "@/utils/respostaApi";
 
 type UsuarioListado = {
     id: number;
@@ -43,19 +44,9 @@ export async function GET() {
             `
         );
 
-        return NextResponse.json({
-            success: true,
-            usuarios: resultado.rows,
-        });
+        return criarRespostaApi(true, "Usuarios listados com sucesso.", resultado.rows);
     } catch {
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Nao foi possivel listar os usuarios.",
-                usuarios: [],
-            },
-            { status: 500 }
-        );
+        return criarRespostaApi<UsuarioListado[]>(false, "Nao foi possivel listar os usuarios.", [], 500);
     }
 }
 
@@ -75,23 +66,11 @@ export async function POST(request: NextRequest) {
         const documento = normalizarCampoOpcional(body.documento);
 
         if (!nome || !validarEmail(email) || senha.length < 6) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Informe nome, e-mail valido e senha com pelo menos 6 caracteres.",
-                },
-                { status: 400 }
-            );
+            return criarRespostaApi(false, "Informe nome, e-mail valido e senha com pelo menos 6 caracteres.", null, 400);
         }
 
         if (senha !== confirmarSenha) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "As senhas informadas nao conferem.",
-                },
-                { status: 400 }
-            );
+            return criarRespostaApi(false, "As senhas informadas nao conferem.", null, 400);
         }
 
         const senhaCriptografada = criarHash(senha);
@@ -118,40 +97,16 @@ export async function POST(request: NextRequest) {
             ]
         );
 
-        return NextResponse.json(
-            {
-                success: true,
-                message: "Usuario cadastrado com sucesso.",
-            },
-            { status: 201 }
-        );
+        return criarRespostaApi(true, "Usuario cadastrado com sucesso.", null, 201);
     } catch (erro) {
         if (erro instanceof SyntaxError) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Requisicao invalida.",
-                },
-                { status: 400 }
-            );
+            return criarRespostaApi(false, "Requisicao invalida.", null, 400);
         }
 
         if (erro instanceof Error && "code" in erro && erro.code === "23505") {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Ja existe um usuario cadastrado com este e-mail.",
-                },
-                { status: 409 }
-            );
+            return criarRespostaApi(false, "Ja existe um usuario cadastrado com este e-mail.", null, 409);
         }
 
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Nao foi possivel cadastrar o usuario.",
-            },
-            { status: 500 }
-        );
+        return criarRespostaApi(false, "Nao foi possivel cadastrar o usuario.", null, 500);
     }
 }

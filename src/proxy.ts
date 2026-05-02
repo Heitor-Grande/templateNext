@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validarJWT } from "@/utils/jwt";
+import { criarRespostaApi } from "@/utils/respostaApi";
 
 const NOME_COOKIE_SESSAO = "app_session";
 const ROTAS_PUBLICAS = ["/", "/api/auth/login"];
@@ -27,13 +28,7 @@ export function proxy(request: NextRequest) {
     }
 
     if (caminho.startsWith("/api")) {
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Sessao invalida ou expirada.",
-            },
-            { status: 401 }
-        );
+        return criarRespostaApi(false, "Sessao invalida ou expirada.", null, 401);
     }
 
     return NextResponse.redirect(new URL("/", request.url));

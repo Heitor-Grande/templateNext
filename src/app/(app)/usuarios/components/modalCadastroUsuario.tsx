@@ -4,6 +4,7 @@ import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
+import { requisitarAPI } from "@/utils/api";
 import { FormEvent, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { FaSave, FaTimes } from "react-icons/fa";
@@ -66,28 +67,25 @@ export default function ModalCadastroUsuario({
         setCarregando(true);
 
         try {
-            const resposta = await fetch("/api/usuarios", {
+            const resposta = await requisitarAPI("/api/usuarios", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formulario),
+                body: formulario,
             });
 
-            const dados = await resposta.json();
             const mensagem =
-                typeof dados.message === "string"
-                    ? dados.message
+                typeof resposta.msg === "string"
+                    ? resposta.msg
                     : "Nao foi possivel cadastrar o usuario.";
 
             setMensagemResposta(mensagem);
+            setFormulario(estadoInicialFormulario);
+            aoFechar();
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Nao foi possivel conectar ao servidor.";
 
-            if (resposta.ok) {
-                setFormulario(estadoInicialFormulario);
-                aoFechar()
-            }
-        } catch {
-            setMensagemResposta("Nao foi possivel conectar ao servidor.");
+            setMensagemResposta(mensagemErro);
         } finally {
             setCarregando(false);
         }

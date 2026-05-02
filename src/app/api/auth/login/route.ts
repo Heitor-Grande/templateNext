@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { validarHash } from "@/utils/criptografia";
 import { criarJWT } from "@/utils/jwt";
+import { criarRespostaApi } from "@/utils/respostaApi";
 import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 
 const MAX_AGE_COOKIE_PADRAO_SEGUNDOS = 60 * 60 * 24 * 7;
@@ -34,13 +35,7 @@ function obterMaxAgeCookieSessao(): number {
  * Use mensagem generica para nao revelar se o e-mail existe ou qual campo falhou.
  */
 function criarRespostaCredenciaisInvalidas() {
-    return NextResponse.json(
-        {
-            success: false,
-            message: "E-mail ou senha invalidos.",
-        },
-        { status: 401 }
-    );
+    return criarRespostaApi(false, "E-mail ou senha invalidos.", null, 401);
 }
 
 /**
@@ -78,13 +73,7 @@ export async function POST(request: NextRequest) {
             return criarRespostaCredenciaisInvalidas();
         }
 
-        const resposta = NextResponse.json(
-            {
-                success: true,
-                message: "Login realizado com sucesso.",
-            },
-            { status: 200 }
-        );
+        const resposta = criarRespostaApi(true, "Login realizado com sucesso.", null);
 
         resposta.cookies.set("app_session", criarJWT(usuario.id), {
             httpOnly: true,
@@ -97,21 +86,9 @@ export async function POST(request: NextRequest) {
         return resposta;
     } catch (erro) {
         if (erro instanceof SyntaxError) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Requisicao invalida.",
-                },
-                { status: 400 }
-            );
+            return criarRespostaApi(false, "Requisicao invalida.", null, 400);
         }
 
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Nao foi possivel realizar o login.",
-            },
-            { status: 500 }
-        );
+        return criarRespostaApi(false, "Nao foi possivel realizar o login.", null, 500);
     }
 }

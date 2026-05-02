@@ -2,6 +2,7 @@
 
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
+import { requisitarAPI } from "@/utils/api";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -34,32 +35,22 @@ export default function PaginaInicial() {
     setLoginMessage("");
 
     try {
-      const resposta = await fetch("/api/auth/login", {
+      await requisitarAPI("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           email,
           password,
-        }),
+        },
       });
-
-      const dados = await resposta.json();
-      const mensagem =
-        typeof dados.message === "string"
-          ? dados.message
-          : "Nao foi possivel realizar o login.";
-
-      if (!resposta.ok) {
-        setLoginMessage(mensagem);
-        return;
-      }
 
       setPassword("");
       router.push("/menuPrincipal");
-    } catch {
-      setLoginMessage("Nao foi possivel conectar ao servidor.");
+    } catch (erro) {
+      const mensagemErro = erro instanceof Error
+        ? erro.message
+        : "Nao foi possivel conectar ao servidor.";
+
+      setLoginMessage(mensagemErro);
     } finally {
       setLoading(false);
     }
