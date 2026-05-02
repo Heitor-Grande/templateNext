@@ -420,6 +420,28 @@ body {
     box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.06);
 }
 
+.data-table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+    border-bottom: 1px solid #dce3ec;
+    background-color: #fff;
+}
+
+.data-table-filter {
+    width: min(100%, 22rem);
+}
+
+.data-table-filter .input-group-text {
+    color: #6c757d;
+    background-color: #f8fafc;
+    border-color: #dce3ec;
+}
+
+.data-table-filter .form-control {
+    border-color: #dce3ec;
+}
+
 .data-table thead th {
     padding: 0.9rem 1rem;
     border-bottom: 1px solid #dce3ec;

@@ -109,7 +109,8 @@ export default function PaginaUsuarios() {
                 colunas={colunas}
                 dados={usuarios}
                 carregando={carregando}
-                mensagemSemDados="Nenhum usuario cadastrado."
+                mensagemSemDados="Nenhum usuário cadastrado."
+                placeholderFiltro="Procurar por Usuário"
             />
 
             <ModalCadastroUsuario
