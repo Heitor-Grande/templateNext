@@ -1,8 +1,10 @@
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { validarHash } from "@/utils/criptografia";
+import { criarJWT } from "@/utils/jwt";
 import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
+
+const MAX_AGE_COOKIE_PADRAO_SEGUNDOS = 60 * 60 * 24 * 7;
 
 type LoginBody = {
     email?: unknown;
@@ -16,6 +18,16 @@ type UsuarioLogin = {
     salt: string;
     ativo: boolean;
 };
+
+/**
+ * Retorna a validade do cookie de sessao em segundos.
+ * Use a variavel MAXAGE_COOKIE para manter o cookie alinhado com a validade do JWT.
+ */
+function obterMaxAgeCookieSessao(): number {
+    const maxAgeCookie = Number(process.env.MAXAGE_COOKIE);
+
+    return Number.isFinite(maxAgeCookie) && maxAgeCookie > 0 ? maxAgeCookie : MAX_AGE_COOKIE_PADRAO_SEGUNDOS;
+}
 
 /**
  * Resposta padronizada para falhas de autenticacao.
@@ -74,12 +86,12 @@ export async function POST(request: NextRequest) {
             { status: 200 }
         );
 
-        resposta.cookies.set("app_session", randomUUID(), {
+        resposta.cookies.set("app_session", criarJWT(usuario.id), {
             httpOnly: true,
             secure: process.env.AMBIENTE === "PROD",
             sameSite: "lax",
             path: "/",
-            maxAge: process.env.COOKIE_MAX_AGE ? parseInt(process.env.COOKIE_MAX_AGE) : 3600,
+            maxAge: obterMaxAgeCookieSessao(),
         });
 
         return resposta;
