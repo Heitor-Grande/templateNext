@@ -2,18 +2,24 @@
 
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
+import ModalConfirmacao from "@/components/modals/confirmModal";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
-import { FaSave, FaTimes } from "react-icons/fa";
+import { FaExclamationTriangle, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 
 type DadosCadastroUsuario = {
+    id: number | null;
     nome: string;
     email: string;
     telefone: string;
     documento: string;
+    ativo: boolean;
+    isAdmin: boolean;
+    criadoEm: string;
+    atualizadoEm: string;
     senha: string;
     confirmarSenha: string;
 };
@@ -24,6 +30,10 @@ type UsuarioDetalhadoApi = {
     email: string;
     telefone: string | null;
     documento: string | null;
+    ativo: boolean;
+    isAdmin: boolean;
+    criado_em: string;
+    atualizado_em: string;
 };
 
 interface ModalCadastroUsuarioProps {
@@ -33,13 +43,45 @@ interface ModalCadastroUsuarioProps {
 }
 
 const estadoInicialFormulario: DadosCadastroUsuario = {
+    id: null,
     nome: "",
     email: "",
     telefone: "",
     documento: "",
+    ativo: true,
+    isAdmin: false,
+    criadoEm: "",
+    atualizadoEm: "",
     senha: "",
     confirmarSenha: "",
 };
+
+function formatarDataHoraFormulario(valor: string): string {
+    if (!valor) {
+        return "";
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+    }).format(new Date(valor));
+}
+
+function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastroUsuario {
+    return {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        telefone: usuario.telefone || "",
+        documento: usuario.documento || "",
+        ativo: usuario.ativo,
+        isAdmin: usuario.isAdmin,
+        criadoEm: formatarDataHoraFormulario(usuario.criado_em),
+        atualizadoEm: formatarDataHoraFormulario(usuario.atualizado_em),
+        senha: "",
+        confirmarSenha: "",
+    };
+}
 
 /**
  * Modal local de cadastro e visualização de usuário.
@@ -54,25 +96,15 @@ export default function ModalCadastroUsuario({
     const [carregando, setCarregando] = useState(false);
     const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
+    const [modalConfirmacaoExclusaoAberto, setModalConfirmacaoExclusaoAberto] = useState(false);
 
     const estaVisualizandoUsuario = typeof idUsuario === "number" && idUsuario > 0;
 
-    function atualizarCampoFormulario(campo: keyof DadosCadastroUsuario, valor: string) {
+    function atualizarCampoFormulario(campo: keyof DadosCadastroUsuario, valor: string | boolean | number | null) {
         setFormulario((estadoAtual) => ({
             ...estadoAtual,
             [campo]: valor,
         }));
-    }
-
-    function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastroUsuario {
-        return {
-            nome: usuario.nome,
-            email: usuario.email,
-            telefone: usuario.telefone || "",
-            documento: usuario.documento || "",
-            senha: "",
-            confirmarSenha: "",
-        };
     }
 
     /**
@@ -112,17 +144,12 @@ export default function ModalCadastroUsuario({
     }, [idUsuario]);
 
     /**
-     * Executa a regra de cadastro do usuário dentro do próprio modal.
-     * Use esta função para validar, chamar API e tratar resposta do fluxo de inclusão.
+     * Executa a regra de cadastro ou edição do usuário dentro do próprio modal.
+     * Use esta função para validar, chamar API e tratar a resposta do fluxo.
      */
     async function cadastrarUsuario(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setMensagemResposta("");
-
-        if (estaVisualizandoUsuario) {
-            setMensagemResposta("A edição de usuário será implementada em seguida.");
-            return;
-        }
 
         if (formulario.senha !== formulario.confirmarSenha) {
             setMensagemResposta("As senhas informadas não conferem.");
@@ -130,18 +157,28 @@ export default function ModalCadastroUsuario({
         }
 
         setCarregando(true);
-        setTextoCarregamento("Cadastrando usuário...");
+        setTextoCarregamento(estaVisualizandoUsuario ? "Atualizando usuário..." : "Cadastrando usuário...");
 
         try {
             const resposta = await requisitarAPI("/api/usuarios", {
-                method: "POST",
-                body: formulario,
+                method: estaVisualizandoUsuario ? "PUT" : "POST",
+                body: {
+                    id: formulario.id,
+                    nome: formulario.nome,
+                    email: formulario.email,
+                    telefone: formulario.telefone,
+                    documento: formulario.documento,
+                    ativo: formulario.ativo,
+                    isAdmin: formulario.isAdmin,
+                    senha: formulario.senha,
+                    confirmarSenha: formulario.confirmarSenha,
+                },
             });
 
             const mensagem =
                 typeof resposta.msg === "string"
                     ? resposta.msg
-                    : "Não foi possível cadastrar o usuário.";
+                    : "Não foi possível salvar o usuário.";
 
             setMensagemResposta(mensagem);
             setFormulario(estadoInicialFormulario);
@@ -158,12 +195,52 @@ export default function ModalCadastroUsuario({
     }
 
     /**
+     * Executa a exclusão do usuário selecionado após confirmação.
+     * Use quando o back de DELETE estiver disponível em /api/usuarios.
+     */
+    async function deletarUsuario() {
+        if (!formulario.id) {
+            setModalConfirmacaoExclusaoAberto(false);
+            setMensagemResposta("Selecione um usuário válido para exclusão.");
+            return;
+        }
+
+        setModalConfirmacaoExclusaoAberto(false);
+        setCarregando(true);
+        setTextoCarregamento("Excluindo usuário...");
+
+        try {
+            const resposta = await requisitarAPI(`/api/usuarios?id=${formulario.id}`, {
+                method: "DELETE",
+            });
+
+            const mensagem =
+                typeof resposta.msg === "string"
+                    ? resposta.msg
+                    : "Usuário excluído com sucesso.";
+
+            setMensagemResposta(mensagem);
+            setFormulario(estadoInicialFormulario);
+            aoFechar();
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Não foi possível excluir o usuário.";
+
+            setMensagemResposta(mensagemErro);
+        } finally {
+            setCarregando(false);
+        }
+    }
+
+    /**
      * Fecha o modal e limpa o formulário para uma nova inclusão.
      */
     function fecharModalCadastroUsuario() {
         setFormulario(estadoInicialFormulario);
         setMensagemResposta("");
         setCarregando(false);
+        setModalConfirmacaoExclusaoAberto(false);
         aoFechar();
     }
 
@@ -253,6 +330,66 @@ export default function ModalCadastroUsuario({
                             </div>
 
                             <div className="col-md-6">
+                                <div className="form-check form-switch mt-4">
+                                    <input
+                                        id="usuario-ativo"
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={formulario.ativo}
+                                        disabled={carregando}
+                                        onChange={(event) => atualizarCampoFormulario("ativo", event.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="usuario-ativo">
+                                        Usuário ativo
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6">
+                                <div className="form-check form-switch mt-4">
+                                    <input
+                                        id="usuario-admin"
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={formulario.isAdmin}
+                                        disabled={carregando}
+                                        onChange={(event) => atualizarCampoFormulario("isAdmin", event.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="usuario-admin">
+                                        Administrador
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6">
+                                <CampoTexto
+                                    id="usuario-criado-em"
+                                    label="Criado em"
+                                    type="text"
+                                    value={formulario.criadoEm}
+                                    placeholder="Gerado automaticamente"
+                                    onChange={() => undefined}
+                                    disabled
+                                    required={false}
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-6">
+                                <CampoTexto
+                                    id="usuario-atualizado-em"
+                                    label="Atualizado em"
+                                    type="text"
+                                    value={formulario.atualizadoEm}
+                                    placeholder="Gerado automaticamente"
+                                    onChange={() => undefined}
+                                    disabled
+                                    required={false}
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-6">
                                 <CampoTexto
                                     id="usuario-senha"
                                     label={estaVisualizandoUsuario ? "Nova senha" : "Senha"}
@@ -285,6 +422,20 @@ export default function ModalCadastroUsuario({
                     </Modal.Body>
 
                     <Modal.Footer>
+                        {estaVisualizandoUsuario && (
+                            <Botao
+                                size="sm"
+                                label="Excluir"
+                                icon={<FaTrash />}
+                                onClick={() => setModalConfirmacaoExclusaoAberto(true)}
+                                disabled={carregando}
+                                loading={false}
+                                variant="outline-danger"
+                                type="button"
+                                className="me-auto"
+                            />
+                        )}
+
                         <Botao
                             size="sm"
                             label="Cancelar"
@@ -302,7 +453,7 @@ export default function ModalCadastroUsuario({
                             label={estaVisualizandoUsuario ? "Salvar alterações" : "Salvar usuário"}
                             icon={<FaSave />}
                             onClick={() => undefined}
-                            disabled={estaVisualizandoUsuario}
+                            disabled={carregando}
                             loading={carregando}
                             variant="outline-primary"
                             type="submit"
@@ -311,6 +462,16 @@ export default function ModalCadastroUsuario({
                     </Modal.Footer>
                 </form>
             </Modal>
+
+            <ModalConfirmacao
+                isOpen={modalConfirmacaoExclusaoAberto}
+                message="Deseja realmente excluir este usuário?"
+                icon={<FaExclamationTriangle className="text-danger fs-1" />}
+                onConfirm={deletarUsuario}
+                onCancel={() => setModalConfirmacaoExclusaoAberto(false)}
+                confirmLabel="Excluir"
+                cancelLabel="Cancelar"
+            />
 
             <ModalCarregamento
                 show={carregando}

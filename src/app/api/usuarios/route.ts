@@ -239,3 +239,34 @@ export async function PUT(request: NextRequest) {
         return criarRespostaApi(false, "Não foi possível atualizar o usuário.", null, 500);
     }
 }
+
+/**
+ * Endpoint DELETE de usuários.
+ * Remove o usuário pelo id informado na query string sem retornar dados sensíveis.
+ */
+export async function DELETE(request: NextRequest) {
+    try {
+        const id = Number(request.nextUrl.searchParams.get("id"));
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return criarRespostaApi(false, "Informe um usuário válido para exclusão.", null, 400);
+        }
+
+        const resultado = await consultarBancoDados<UsuarioListado>(
+            `
+                delete from usuarios
+                where id = $1
+                returning id
+            `,
+            [id]
+        );
+
+        if (!resultado.rows[0]) {
+            return criarRespostaApi(false, "Usuário não encontrado.", null, 404);
+        }
+
+        return criarRespostaApi(true, "Usuário excluído com sucesso.", null);
+    } catch {
+        return criarRespostaApi(false, "Não foi possível excluir o usuário.", null, 500);
+    }
+}
