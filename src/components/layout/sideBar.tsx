@@ -1,9 +1,11 @@
 "use client";
 
 import { Botao } from "@/components/inputs/button";
+import { ModalCarregamento } from "@/components/modals/loading";
+import { requisitarAPI } from "@/utils/api";
 import { Nav } from "react-bootstrap";
 import Link from "next/link";
-import { ReactNode, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
     FaBars,
@@ -22,6 +24,10 @@ type MenuItem = {
     href?: string;
     icon: ReactNode;
     children?: MenuItem[];
+};
+
+type DadosVerificacaoSideBar = {
+    acessoPermitido: boolean;
 };
 
 /**
@@ -92,6 +98,7 @@ function ItemMenuLateral({
  */
 export default function BarraLateral() {
     const [aberta, setAberta] = useState(false);
+    const [carregandoVerificacao, setCarregandoVerificacao] = useState(false);
 
     const versaoApp = "1.0.0";
 
@@ -114,6 +121,38 @@ export default function BarraLateral() {
     function fecharBarraLateral() {
         setAberta(false);
     }
+
+    /**
+     * Confirma se o usuário logado ainda pode acessar a área interna.
+     * Use ao carregar a sidebar para refletir mudanças de status do usuário ou da aplicação.
+     */
+    const verificarAcessoAreaInterna = useCallback(async () => {
+        setCarregandoVerificacao(true);
+
+        try {
+            const resposta = await requisitarAPI("/api/sideBar", {
+                method: "GET",
+            });
+
+            const dados = resposta.dados as DadosVerificacaoSideBar | null;
+
+            if (!dados?.acessoPermitido) {
+                window.location.assign("/");
+            }
+        } catch {
+            window.location.assign("/");
+        } finally {
+            setCarregandoVerificacao(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const verificacaoInicial = window.setTimeout(() => {
+            void verificarAcessoAreaInterna();
+        }, 0);
+
+        return () => window.clearTimeout(verificacaoInicial);
+    }, [verificarAcessoAreaInterna]);
 
     return (
         <>
@@ -194,6 +233,11 @@ export default function BarraLateral() {
                     </div>
                 </div>
             </aside>
+
+            <ModalCarregamento
+                show={carregandoVerificacao}
+                text="Verificando acesso..."
+            />
         </>
     );
 }
