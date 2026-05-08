@@ -13,6 +13,7 @@ import {
     FaHome,
     FaList,
     FaTimes,
+    FaUserCircle,
     FaUsers,
 } from "react-icons/fa";
 
@@ -182,8 +183,15 @@ export default function BarraLateral() {
                 </Nav>
 
                 <div className="sidebar-footer">
-                    <span>Versão</span>
-                    <strong>v{versaoApp}</strong>
+                    <ItemMenuLateral
+                        item={{ label: "Minha conta", href: "/minhaConta", icon: <FaUserCircle /> }}
+                        aoNavegar={fecharBarraLateral}
+                    />
+
+                    <div className="sidebar-footer-version">
+                        <span>Versão</span>
+                        <strong>v{versaoApp}</strong>
+                    </div>
                 </div>
             </aside>
         </>

@@ -31,12 +31,24 @@ export function criarJWT(idUsuario: string): string {
  * Retorna true para tokens válidos e false para tokens inválidos ou expirados.
  */
 export function validarJWT(token: string): boolean {
+    return obterPayloadJWT(token) !== null;
+}
+
+/**
+ * Retorna o payload do JWT quando assinatura e expiração são válidas.
+ * Use em rotas protegidas que precisam identificar o usuário autenticado.
+ */
+export function obterPayloadJWT(token: string): PayloadJWT | null {
     try {
         const payload = jwt.verify(token, obterSegredoJWT()) as PayloadJWT;
 
-        return typeof payload.idUsuario === "string" && typeof payload.dataLogin === "string";
+        if (typeof payload.idUsuario === "string" && typeof payload.dataLogin === "string") {
+            return payload;
+        }
+
+        return null;
     } catch {
-        return false;
+        return null;
     }
 }
 

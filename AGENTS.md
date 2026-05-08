@@ -151,6 +151,8 @@ Use `src/utils/respostaApi.ts` para criar respostas padronizadas no back. O camp
 
 O arquivo `src/proxy.ts` valida o cookie `app_session` antes de liberar rotas protegidas. Use `validarJWT` de `src/utils/jwt.ts` para validar assinatura e expiracao do token.
 
+Quando uma rota de API precisar do id do usuario logado, use `obterIdUsuarioAutenticado` de `src/utils/autenticacao.ts`. Nao leia nem decodifique o cookie `app_session` diretamente dentro da rota quando essa funcao atender ao caso.
+
 Mantenha rotas publicas explicitas dentro do proxy. Para APIs protegidas sem JWT valido, retorne resposta padronizada com status `401`; para paginas protegidas, redirecione para `/`.
 
 ## Utils

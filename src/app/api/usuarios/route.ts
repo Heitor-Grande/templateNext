@@ -23,6 +23,12 @@ type CadastroUsuarioBody = {
     documento?: string;
 };
 
+type AtualizacaoUsuarioBody = CadastroUsuarioBody & {
+    id?: unknown;
+    ativo?: unknown;
+    isAdmin?: unknown;
+};
+
 /**
  * Endpoint GET de usuários.
  * Use para alimentar tabelas de listagem sem retornar dados sensíveis como senha_hash.
@@ -108,5 +114,92 @@ export async function POST(request: NextRequest) {
         }
 
         return criarRespostaApi(false, "Não foi possível cadastrar o usuário.", null, 500);
+    }
+}
+
+/**
+ * Endpoint PUT de usuários.
+ * Atualiza dados cadastrais, status e senha opcional sem retornar informações sensíveis.
+ */
+export async function PUT(request: NextRequest) {
+    try {
+        const body = await request.json() as AtualizacaoUsuarioBody;
+
+        const id = typeof body.id === "number" ? body.id : Number(body.id);
+        const nome = validarStringComConteudo(body.nome) ? body.nome.trim() : "";
+        const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
+        const senha = validarStringComConteudo(body.senha) ? body.senha : "";
+        const confirmarSenha = validarStringComConteudo(body.confirmarSenha) ? body.confirmarSenha : "";
+        const telefone = normalizarCampoOpcional(body.telefone);
+        const documento = normalizarCampoOpcional(body.documento);
+        const ativo = typeof body.ativo === "boolean" ? body.ativo : null;
+        const isAdmin = typeof body.isAdmin === "boolean" ? body.isAdmin : null;
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return criarRespostaApi(false, "Informe um usuário válido para atualização.", null, 400);
+        }
+
+        if (!nome || nome.length > 120 || !validarEmail(email) || email.length > 180) {
+            return criarRespostaApi(false, "Informe nome e e-mail válido dentro do limite permitido.", null, 400);
+        }
+
+        if ((telefone && telefone.length > 20) || (documento && documento.length > 20)) {
+            return criarRespostaApi(false, "Telefone e documento devem respeitar o limite de caracteres.", null, 400);
+        }
+
+        if (senha && senha.length < 6) {
+            return criarRespostaApi(false, "A senha deve ter pelo menos 6 caracteres.", null, 400);
+        }
+
+        if (senha && senha !== confirmarSenha) {
+            return criarRespostaApi(false, "As senhas informadas não conferem.", null, 400);
+        }
+
+        const senhaCriptografada = senha ? criarHash(senha) : null;
+
+        const resultado = await consultarBancoDados<UsuarioListado>(
+            `
+                update usuarios
+                set
+                    nome = $1,
+                    email = $2,
+                    telefone = $3,
+                    documento = $4,
+                    ativo = coalesce($5, ativo),
+                    "isAdmin" = coalesce($6, "isAdmin"),
+                    senha_hash = coalesce($7, senha_hash),
+                    salt = coalesce($8, salt),
+                    atualizado_em = now()
+                where id = $9
+                returning id
+            `,
+            [
+                nome,
+                email,
+                telefone,
+                documento,
+                ativo,
+                isAdmin,
+                senhaCriptografada?.hash ?? null,
+                senhaCriptografada?.salt ?? null,
+                id,
+            ]
+        );
+
+        if (!resultado.rows[0]) {
+            return criarRespostaApi(false, "Usuário não encontrado.", null, 404);
+        }
+
+        return criarRespostaApi(true, "Usuário atualizado com sucesso.", null);
+    } catch (erro) {
+        if (erro instanceof SyntaxError) {
+            return criarRespostaApi(false, "Requisição inválida.", null, 400);
+        }
+
+        if (erro instanceof Error && "code" in erro && erro.code === "23505") {
+            return criarRespostaApi(false, "Já existe um usuário cadastrado com este e-mail.", null, 409);
+        }
+
+        return criarRespostaApi(false, "Não foi possível atualizar o usuário.", null, 500);
     }
 }
