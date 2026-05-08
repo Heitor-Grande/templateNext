@@ -8,8 +8,8 @@ import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 const MAX_AGE_COOKIE_PADRAO_SEGUNDOS = 60 * 60 * 24 * 7;
 
 type LoginBody = {
-    email?: unknown;
-    password?: unknown;
+    email?: string;
+    password?: string;
 };
 
 type UsuarioLogin = {
