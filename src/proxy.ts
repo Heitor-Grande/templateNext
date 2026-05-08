@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validarJWT } from "@/utils/jwt";
+import { consultarBancoDados } from "@/services/database";
+import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { criarRespostaApi } from "@/utils/respostaApi";
 
-const NOME_COOKIE_SESSAO = "app_session";
 const ROTAS_PUBLICAS = ["/", "/api/auth/login"];
+
+type UsuarioSessao = {
+    id: number;
+};
 
 // Verifica se o caminho da requisição é uma rota pública.
 function rotaPublica(caminho: string): boolean {
@@ -11,19 +15,39 @@ function rotaPublica(caminho: string): boolean {
 }
 
 /**
- * Proxy global de autenticação.
- * Use para bloquear rotas protegidas quando o cookie de sessão não possuir um JWT válido.
+ * Confirma se o usuário da sessão ainda existe e permanece ativo.
+ * Use no proxy para impedir acesso com JWT válido de usuário desativado.
  */
-export function proxy(request: NextRequest) {
+async function usuarioEstaAtivo(idUsuario: number): Promise<boolean> {
+    const resultado = await consultarBancoDados<UsuarioSessao>(
+        `
+            select
+                id
+            from usuarios
+            where id = $1
+              and ativo = true
+            limit 1
+        `,
+        [idUsuario]
+    );
+
+    return Boolean(resultado.rows[0]);
+}
+
+/**
+ * Proxy global de autenticação.
+ * Use para bloquear rotas protegidas quando o cookie de sessão não possuir JWT válido ou o usuário estiver inativo.
+ */
+export async function proxy(request: NextRequest) {
     const caminho = request.nextUrl.pathname;
 
     if (rotaPublica(caminho)) {
         return NextResponse.next();
     }
 
-    const token = request.cookies.get(NOME_COOKIE_SESSAO)?.value;
+    const idUsuario = obterIdUsuarioAutenticado(request);
 
-    if (token && validarJWT(token)) {
+    if (idUsuario && await usuarioEstaAtivo(idUsuario)) {
         return NextResponse.next();
     }
 
@@ -34,7 +58,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
 }
 
-// Não aplica o proxy para os caminhos do array de rotas públicas, arquivos estáticos e assets.
+// Não aplica o proxy para rotas públicas, arquivos estáticos e assets.
 export const config = {
     matcher: [
         "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",

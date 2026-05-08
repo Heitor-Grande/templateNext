@@ -34,8 +34,8 @@ function obterMaxAgeCookieSessao(): number {
  * Resposta padronizada para falhas de autenticação.
  * Use mensagem genérica para não revelar se o e-mail existe ou qual campo falhou.
  */
-function criarRespostaCredenciaisInvalidas() {
-    return criarRespostaApi(false, "E-mail ou senha inválidos.", null, 401);
+function criarRespostaCredenciaisInvalidas(mensagem: string) {
+    return criarRespostaApi(false, mensagem, null, 401);
 }
 
 /**
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         const password = validarStringComConteudo(body.password) ? body.password : "";
 
         if (!validarEmail(email) || !password) {
-            return criarRespostaCredenciaisInvalidas();
+            return criarRespostaCredenciaisInvalidas("E-mail ou senha inválidos.");
         }
 
         const resultadoUsuario = await consultarBancoDados<UsuarioLogin>(
@@ -70,7 +70,12 @@ export async function POST(request: NextRequest) {
         const usuario = resultadoUsuario.rows[0];
 
         if (!usuario || !usuario.ativo || !validarHash(password, usuario.senha_hash, usuario.salt)) {
-            return criarRespostaCredenciaisInvalidas();
+
+            if (!usuario.ativo) {
+                return criarRespostaApi(false, "Usuário inativo. Entre em contato com o suporte.", null, 403);
+            }
+            
+            return criarRespostaCredenciaisInvalidas("E-mail ou senha inválidos.");
         }
 
         const resposta = criarRespostaApi(true, "Login realizado com sucesso.", null);

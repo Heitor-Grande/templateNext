@@ -14,6 +14,11 @@ type UsuarioListado = {
     criado_em: Date;
 };
 
+type UsuarioDetalhado = UsuarioListado & {
+    isAdmin: boolean;
+    atualizado_em: Date;
+};
+
 type CadastroUsuarioBody = {
     nome?: string;
     email?: string;
@@ -33,8 +38,39 @@ type AtualizacaoUsuarioBody = CadastroUsuarioBody & {
  * Endpoint GET de usuários.
  * Use para alimentar tabelas de listagem sem retornar dados sensíveis como senha_hash.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const id = Number(request.nextUrl.searchParams.get("id"));
+
+        if (Number.isInteger(id) && id > 0) {
+            const resultadoUsuario = await consultarBancoDados<UsuarioDetalhado>(
+                `
+                    select
+                        id,
+                        nome,
+                        email,
+                        telefone,
+                        documento,
+                        ativo,
+                        "isAdmin",
+                        criado_em,
+                        atualizado_em
+                    from usuarios
+                    where id = $1
+                    limit 1
+                `,
+                [id]
+            );
+
+            const usuario = resultadoUsuario.rows[0];
+
+            if (!usuario) {
+                return criarRespostaApi(false, "Usuário não encontrado.", null, 404);
+            }
+
+            return criarRespostaApi(true, "Usuário carregado com sucesso.", usuario);
+        }
+
         const resultado = await consultarBancoDados<UsuarioListado>(
             `
                 select

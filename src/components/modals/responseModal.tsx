@@ -41,7 +41,7 @@ export default function ModalResposta({
             <Modal.Footer className="response-modal-footer">
                 <Botao
                     size="sm"
-                    label="Entendi"
+                    label="Ok"
                     onClick={onClose}
                     disabled={false}
                     loading={false}

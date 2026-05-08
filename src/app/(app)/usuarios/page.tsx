@@ -27,6 +27,7 @@ export default function PaginaUsuarios() {
     const [carregando, setCarregando] = useState(true);
     const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
+    const [idUsuarioSelecionado, setIdUsuarioSelecionado] = useState<number | null>(null);
 
     const colunas: ColunaTabelaDados<UsuarioTabela>[] = [
         { chave: "nome", titulo: "Nome" },
@@ -86,6 +87,21 @@ export default function PaginaUsuarios() {
         return () => window.clearTimeout(carregamentoInicial);
     }, [carregarUsuariosCadastrados]);
 
+    /**
+     * Abre o modal com os dados do usuário selecionado na tabela.
+     */
+    function abrirCadastroUsuarioSelecionado(idUsuario: string | number | null) {
+        const idNormalizado = Number(idUsuario);
+
+        if (!Number.isInteger(idNormalizado) || idNormalizado <= 0) {
+            setMensagemResposta("Não foi possível identificar o usuário selecionado.");
+            return;
+        }
+
+        setIdUsuarioSelecionado(idNormalizado);
+        setModalCadastroAberto(true);
+    }
+
     return (
         <div className="container-fluid">
             <div className="page-header">
@@ -106,7 +122,10 @@ export default function PaginaUsuarios() {
                                         size="sm"
                                         label="Novo usuário"
                                         icon={<FaPlus size={14} />}
-                                        onClick={() => setModalCadastroAberto(true)}
+                                        onClick={() => {
+                                            setIdUsuarioSelecionado(null);
+                                            setModalCadastroAberto(true);
+                                        }}
                                         disabled={carregando}
                                         loading={carregando}
                                         variant="outline-primary"
@@ -127,15 +146,15 @@ export default function PaginaUsuarios() {
                 mensagemSemDados="Nenhum usuário cadastrado."
                 placeholderFiltro="Procurar por usuário"
                 usaClickLinha={true}
-                aoClicarLinha={function(idUsuario){
-                  
-                }}
+                aoClicarLinha={abrirCadastroUsuarioSelecionado}
             />
 
             <ModalCadastroUsuario
                 aberto={modalCadastroAberto}
+                idUsuario={idUsuarioSelecionado}
                 aoFechar={() => {
                     setModalCadastroAberto(false);
+                    setIdUsuarioSelecionado(null);
                     carregarUsuariosCadastrados();
                 }}
             />

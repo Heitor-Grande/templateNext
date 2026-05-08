@@ -5,7 +5,7 @@ import { CampoTexto } from "@/components/inputs/input";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { FaSave, FaTimes } from "react-icons/fa";
 
@@ -18,8 +18,17 @@ type DadosCadastroUsuario = {
     confirmarSenha: string;
 };
 
+type UsuarioDetalhadoApi = {
+    id: number;
+    nome: string;
+    email: string;
+    telefone: string | null;
+    documento: string | null;
+};
+
 interface ModalCadastroUsuarioProps {
     aberto: boolean;
+    idUsuario?: number | null;
     aoFechar: () => void;
 }
 
@@ -33,16 +42,20 @@ const estadoInicialFormulario: DadosCadastroUsuario = {
 };
 
 /**
- * Modal local de cadastro de usuário.
- * Use apenas no fluxo de usuários para coletar os dados básicos antes de enviar para a API.
+ * Modal local de cadastro e visualização de usuário.
+ * Use no fluxo de usuários para cadastrar novos registros ou carregar dados de um usuário selecionado.
  */
 export default function ModalCadastroUsuario({
     aberto,
+    idUsuario,
     aoFechar,
 }: ModalCadastroUsuarioProps) {
     const [formulario, setFormulario] = useState<DadosCadastroUsuario>(estadoInicialFormulario);
     const [carregando, setCarregando] = useState(false);
+    const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
+
+    const estaVisualizandoUsuario = typeof idUsuario === "number" && idUsuario > 0;
 
     function atualizarCampoFormulario(campo: keyof DadosCadastroUsuario, valor: string) {
         setFormulario((estadoAtual) => ({
@@ -50,6 +63,53 @@ export default function ModalCadastroUsuario({
             [campo]: valor,
         }));
     }
+
+    function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastroUsuario {
+        return {
+            nome: usuario.nome,
+            email: usuario.email,
+            telefone: usuario.telefone || "",
+            documento: usuario.documento || "",
+            senha: "",
+            confirmarSenha: "",
+        };
+    }
+
+    /**
+     * Carrega os dados do usuário selecionado para preencher o formulário.
+     */
+    const carregarUsuarioSelecionado = useCallback(async () => {
+        if (!idUsuario) {
+            return;
+        }
+
+        setCarregando(true);
+        setTextoCarregamento("Carregando usuário...");
+        setMensagemResposta("");
+
+        try {
+            const resposta = await requisitarAPI(`/api/usuarios?id=${idUsuario}`, {
+                method: "GET",
+            });
+
+            const usuario = resposta.dados as UsuarioDetalhadoApi | null;
+
+            if (!usuario) {
+                setMensagemResposta("Não foi possível carregar os dados do usuário.");
+                return;
+            }
+
+            setFormulario(mapearUsuarioParaFormulario(usuario));
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Não foi possível carregar os dados do usuário.";
+
+            setMensagemResposta(mensagemErro);
+        } finally {
+            setCarregando(false);
+        }
+    }, [idUsuario]);
 
     /**
      * Executa a regra de cadastro do usuário dentro do próprio modal.
@@ -59,12 +119,18 @@ export default function ModalCadastroUsuario({
         event.preventDefault();
         setMensagemResposta("");
 
+        if (estaVisualizandoUsuario) {
+            setMensagemResposta("A edição de usuário será implementada em seguida.");
+            return;
+        }
+
         if (formulario.senha !== formulario.confirmarSenha) {
             setMensagemResposta("As senhas informadas não conferem.");
             return;
         }
 
         setCarregando(true);
+        setTextoCarregamento("Cadastrando usuário...");
 
         try {
             const resposta = await requisitarAPI("/api/usuarios", {
@@ -101,11 +167,30 @@ export default function ModalCadastroUsuario({
         aoFechar();
     }
 
+    useEffect(() => {
+        if (!aberto) {
+            return;
+        }
+
+        const carregamentoInicial = window.setTimeout(() => {
+            if (!idUsuario) {
+                setFormulario(estadoInicialFormulario);
+                return;
+            }
+
+            void carregarUsuarioSelecionado();
+        }, 0);
+
+        return () => window.clearTimeout(carregamentoInicial);
+    }, [aberto, idUsuario, carregarUsuarioSelecionado]);
+
     return (
         <>
             <Modal show={aberto} onHide={fecharModalCadastroUsuario} centered size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title className="fs-5">Novo usuário</Modal.Title>
+                    <Modal.Title className="fs-5">
+                        {estaVisualizandoUsuario ? "Usuário" : "Novo usuário"}
+                    </Modal.Title>
                 </Modal.Header>
 
                 <form onSubmit={cadastrarUsuario}>
@@ -170,13 +255,13 @@ export default function ModalCadastroUsuario({
                             <div className="col-md-6">
                                 <CampoTexto
                                     id="usuario-senha"
-                                    label="Senha"
+                                    label={estaVisualizandoUsuario ? "Nova senha" : "Senha"}
                                     type="password"
                                     value={formulario.senha}
-                                    placeholder="Senha inicial"
+                                    placeholder={estaVisualizandoUsuario ? "Digite uma nova senha" : "Senha inicial"}
                                     onChange={(event) => atualizarCampoFormulario("senha", event.target.value)}
                                     disabled={carregando}
-                                    required
+                                    required={!estaVisualizandoUsuario}
                                     className="mb-0"
                                     helpText="A senha deve ter pelo menos 6 caracteres."
                                     classNameHelpText="form-text text-muted"
@@ -186,13 +271,13 @@ export default function ModalCadastroUsuario({
                             <div className="col-md-6">
                                 <CampoTexto
                                     id="usuario-confirmar-senha"
-                                    label="Confirmar senha"
+                                    label={estaVisualizandoUsuario ? "Confirmar nova senha" : "Confirmar senha"}
                                     type="password"
                                     value={formulario.confirmarSenha}
-                                    placeholder="Repita a senha inicial"
+                                    placeholder={estaVisualizandoUsuario ? "Repita a nova senha" : "Repita a senha inicial"}
                                     onChange={(event) => atualizarCampoFormulario("confirmarSenha", event.target.value)}
                                     disabled={carregando}
-                                    required
+                                    required={!estaVisualizandoUsuario}
                                     className="mb-0"
                                 />
                             </div>
@@ -214,10 +299,10 @@ export default function ModalCadastroUsuario({
 
                         <Botao
                             size="sm"
-                            label="Salvar usuário"
+                            label={estaVisualizandoUsuario ? "Salvar alterações" : "Salvar usuário"}
                             icon={<FaSave />}
                             onClick={() => undefined}
-                            disabled={false}
+                            disabled={estaVisualizandoUsuario}
                             loading={carregando}
                             variant="outline-primary"
                             type="submit"
@@ -229,7 +314,7 @@ export default function ModalCadastroUsuario({
 
             <ModalCarregamento
                 show={carregando}
-                text="Cadastrando usuário..."
+                text={textoCarregamento}
             />
 
             <ModalResposta
