@@ -3,8 +3,10 @@
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
 import { Seletor } from "@/components/inputs/select";
+import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
-import { FormEvent, useState } from "react";
+import { requisitarAPI } from "@/utils/api";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { FaSave } from "react-icons/fa";
 
 type OpcaoDisponibilidade = {
@@ -18,6 +20,14 @@ type DadosConfiguracaoAplicacao = {
     emailSuporteContato: string;
     contato: string;
     disponibilidade: OpcaoDisponibilidade | null;
+};
+
+type ConfiguracaoAplicacaoApi = {
+    fantasia: string;
+    cnpj: string;
+    email_suporte_contato: string;
+    contato: string;
+    disponibilidade: string;
 };
 
 const opcoesDisponibilidade: OpcaoDisponibilidade[] = [
@@ -34,6 +44,20 @@ const estadoInicialConfiguracao: DadosConfiguracaoAplicacao = {
     disponibilidade: opcoesDisponibilidade[0],
 };
 
+function obterOpcaoDisponibilidade(valor: string): OpcaoDisponibilidade {
+    return opcoesDisponibilidade.find((opcao) => opcao.value === valor) ?? opcoesDisponibilidade[0];
+}
+
+function mapearConfiguracaoParaFormulario(configuracao: ConfiguracaoAplicacaoApi): DadosConfiguracaoAplicacao {
+    return {
+        fantasiaEmpresa: configuracao.fantasia,
+        cnpjEmpresa: configuracao.cnpj,
+        emailSuporteContato: configuracao.email_suporte_contato,
+        contato: configuracao.contato,
+        disponibilidade: obterOpcaoDisponibilidade(configuracao.disponibilidade),
+    };
+}
+
 /**
  * Página de configuração da aplicação.
  * Use como base para controlar dados da empresa e disponibilidade do sistema antes da integração com o back-end.
@@ -41,6 +65,7 @@ const estadoInicialConfiguracao: DadosConfiguracaoAplicacao = {
 export default function PaginaConfiguracoes() {
     const [formulario, setFormulario] = useState<DadosConfiguracaoAplicacao>(estadoInicialConfiguracao);
     const [mensagemResposta, setMensagemResposta] = useState("");
+    const [carregando, setCarregando] = useState(false);
 
     function atualizarCampoFormulario(campo: keyof DadosConfiguracaoAplicacao, valor: string | OpcaoDisponibilidade | null) {
         setFormulario((estadoAtual) => ({
@@ -50,12 +75,78 @@ export default function PaginaConfiguracoes() {
     }
 
     /**
-     * Valida localmente o formulário enquanto o contrato de API ainda não foi definido.
+     * Carrega o registro único de configuração e preenche o formulário.
      */
-    function salvarConfiguracoesAplicacao(event: FormEvent<HTMLFormElement>) {
+    const carregarConfiguracoesAplicacao = useCallback(async () => {
+        setCarregando(true);
+        setMensagemResposta("");
+
+        try {
+            const resposta = await requisitarAPI("/api/configuracoes", {
+                method: "GET",
+            });
+
+            const configuracao = resposta.dados as ConfiguracaoAplicacaoApi | null;
+
+            if (configuracao) {
+                setFormulario(mapearConfiguracaoParaFormulario(configuracao));
+            }
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Não foi possível carregar as configurações.";
+
+            setMensagemResposta(mensagemErro);
+        } finally {
+            setCarregando(false);
+        }
+    }, []);
+
+    /**
+     * Atualiza o registro único de configuração da aplicação.
+     */
+    async function salvarConfiguracoesAplicacao(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setMensagemResposta("Configurações preparadas para integração com a API.");
+        setCarregando(true);
+        setMensagemResposta("");
+
+        try {
+            const resposta = await requisitarAPI("/api/configuracoes", {
+                method: "PUT",
+                body: {
+                    fantasia: formulario.fantasiaEmpresa,
+                    cnpj: formulario.cnpjEmpresa,
+                    emailSuporteContato: formulario.emailSuporteContato,
+                    contato: formulario.contato,
+                    disponibilidade: formulario.disponibilidade?.value,
+                },
+            });
+
+            const configuracao = resposta.dados as ConfiguracaoAplicacaoApi | null;
+
+            if (configuracao) {
+                setFormulario(mapearConfiguracaoParaFormulario(configuracao));
+            }
+
+            setMensagemResposta(resposta.msg);
+        } catch (erro) {
+            const mensagemErro = erro instanceof Error
+                ? erro.message
+                : "Não foi possível atualizar as configurações.";
+
+            setMensagemResposta(mensagemErro);
+        } finally {
+            setCarregando(false);
+        }
     }
+
+    useEffect(() => {
+        const carregamentoInicial = window.setTimeout(() => {
+            void carregarConfiguracoesAplicacao();
+        }, 0);
+
+        return () => window.clearTimeout(carregamentoInicial);
+    }, [carregarConfiguracoesAplicacao]);
 
     return (
         <div className="container-fluid">
@@ -84,7 +175,7 @@ export default function PaginaConfiguracoes() {
                                     value={formulario.fantasiaEmpresa}
                                     placeholder="Nome fantasia"
                                     onChange={(event) => atualizarCampoFormulario("fantasiaEmpresa", event.target.value)}
-                                    disabled={false}
+                                    disabled={carregando}
                                     required
                                     className="mb-0"
                                 />
@@ -98,7 +189,7 @@ export default function PaginaConfiguracoes() {
                                     value={formulario.cnpjEmpresa}
                                     placeholder="00.000.000/0000-00"
                                     onChange={(event) => atualizarCampoFormulario("cnpjEmpresa", event.target.value)}
-                                    disabled={false}
+                                    disabled={carregando}
                                     required
                                     className="mb-0"
                                 />
@@ -112,7 +203,7 @@ export default function PaginaConfiguracoes() {
                                     value={formulario.emailSuporteContato}
                                     placeholder="suporte@empresa.com"
                                     onChange={(event) => atualizarCampoFormulario("emailSuporteContato", event.target.value)}
-                                    disabled={false}
+                                    disabled={carregando}
                                     required
                                     className="mb-0"
                                 />
@@ -126,7 +217,7 @@ export default function PaginaConfiguracoes() {
                                     value={formulario.contato}
                                     placeholder="Nome ou telefone de contato"
                                     onChange={(event) => atualizarCampoFormulario("contato", event.target.value)}
-                                    disabled={false}
+                                    disabled={carregando}
                                     required
                                     className="mb-0"
                                 />
@@ -140,7 +231,7 @@ export default function PaginaConfiguracoes() {
                                     value={formulario.disponibilidade}
                                     onChange={(opcao) => atualizarCampoFormulario("disponibilidade", opcao)}
                                     placeholder="Selecione a disponibilidade"
-                                    isDisabled={false}
+                                    isDisabled={carregando}
                                     isClearable={false}
                                     className="mb-0"
                                 />
@@ -154,7 +245,7 @@ export default function PaginaConfiguracoes() {
                             label="Salvar configurações"
                             icon={<FaSave />}
                             onClick={() => undefined}
-                            disabled={false}
+                            disabled={carregando}
                             loading={false}
                             variant="outline-primary"
                             type="submit"
@@ -168,6 +259,11 @@ export default function PaginaConfiguracoes() {
                 isOpen={Boolean(mensagemResposta)}
                 message={mensagemResposta}
                 onClose={() => setMensagemResposta("")}
+            />
+
+            <ModalCarregamento
+                show={carregando}
+                text="Processando configurações..."
             />
         </div>
     );
