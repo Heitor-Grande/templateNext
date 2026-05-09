@@ -106,10 +106,10 @@ export default function PaginaUsuarios() {
         <div className="container-fluid">
             <div className="page-header">
                 <div className="card w-100">
-                    <div className="card-header">
-                        <h4 className="mb-1">Usuários</h4>
-                    </div>
                     <div className="card-body">
+                        <h5 className="">Usuários</h5>
+                        <hr />
+
                         <div className="container-fluid">
                             <div className="row">
                                 <div className="col-lg-10 col-md-3 col-sm">

@@ -83,7 +83,7 @@ export default function PaginaMinhaConta() {
     }, []);
 
     const mapearUsuarioParaFormulario = useCallback((usuario: UsuarioMinhaContaApi): DadosMinhaConta => {
-        
+
         return {
             id: String(usuario.id),
             nome: usuario.nome,
@@ -182,10 +182,9 @@ export default function PaginaMinhaConta() {
         <div className="container-fluid">
             <div className="page-header">
                 <div className="card w-100">
-                    <div className="card-header">
-                        <h4 className="mb-1">Minha conta</h4>
-                    </div>
                     <div className="card-body">
+                        <h5 className="mb-1">Minha conta</h5>
+                        <hr />
                         <p className="text-muted mb-0">
                             Atualize as informações básicas da conta vinculada ao usuário autenticado.
                         </p>
@@ -347,20 +346,20 @@ export default function PaginaMinhaConta() {
                                 />
                             </div>
                         </div>
-                    </div>
-
-                    <div className="card-footer d-flex justify-content-end">
-                        <Botao
-                            size="sm"
-                            label="Salvar alterações"
-                            icon={<FaSave />}
-                            onClick={() => undefined}
-                            disabled={false}
-                            loading={carregando}
-                            variant="outline-primary"
-                            type="submit"
-                            className=""
-                        />
+                        <hr />
+                        <div className="text-end">
+                            <Botao
+                                size="sm"
+                                label="Salvar alterações"
+                                icon={<FaSave />}
+                                onClick={() => undefined}
+                                disabled={false}
+                                loading={carregando}
+                                variant="outline-primary"
+                                type="submit"
+                                className=""
+                            />
+                        </div>
                     </div>
                 </div>
             </form>

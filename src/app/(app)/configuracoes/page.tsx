@@ -20,6 +20,11 @@ type DadosConfiguracaoAplicacao = {
     emailSuporteContato: string;
     contato: string;
     disponibilidade: OpcaoDisponibilidade | null;
+    smtpHost: string;
+    smtpPort: string;
+    smtpUser: string;
+    smtpPass: string;
+    smtpFrom: string;
 };
 
 type ConfiguracaoAplicacaoApi = {
@@ -28,6 +33,11 @@ type ConfiguracaoAplicacaoApi = {
     email_suporte_contato: string;
     contato: string;
     disponibilidade: string;
+    smtp_host: string;
+    smtp_port: string;
+    smtp_user: string;
+    smtp_pass: string;
+    smtp_from: string;
 };
 
 const opcoesDisponibilidade: OpcaoDisponibilidade[] = [
@@ -42,6 +52,11 @@ const estadoInicialConfiguracao: DadosConfiguracaoAplicacao = {
     emailSuporteContato: "",
     contato: "",
     disponibilidade: opcoesDisponibilidade[0],
+    smtpHost: "",
+    smtpPort: "",
+    smtpUser: "",
+    smtpPass: "",
+    smtpFrom: "",
 };
 
 function obterOpcaoDisponibilidade(valor: string): OpcaoDisponibilidade {
@@ -55,12 +70,17 @@ function mapearConfiguracaoParaFormulario(configuracao: ConfiguracaoAplicacaoApi
         emailSuporteContato: configuracao.email_suporte_contato,
         contato: configuracao.contato,
         disponibilidade: obterOpcaoDisponibilidade(configuracao.disponibilidade),
+        smtpHost: configuracao.smtp_host,
+        smtpPort: configuracao.smtp_port,
+        smtpUser: configuracao.smtp_user,
+        smtpPass: configuracao.smtp_pass,
+        smtpFrom: configuracao.smtp_from,
     };
 }
 
 /**
  * Página de configuração da aplicação.
- * Use como base para controlar dados da empresa e disponibilidade do sistema antes da integração com o back-end.
+ * Use como base para controlar dados da empresa, disponibilidade e envio de e-mails transacionais.
  */
 export default function PaginaConfiguracoes() {
     const [formulario, setFormulario] = useState<DadosConfiguracaoAplicacao>(estadoInicialConfiguracao);
@@ -119,6 +139,11 @@ export default function PaginaConfiguracoes() {
                     emailSuporteContato: formulario.emailSuporteContato,
                     contato: formulario.contato,
                     disponibilidade: formulario.disponibilidade?.value,
+                    smtpHost: formulario.smtpHost,
+                    smtpPort: formulario.smtpPort,
+                    smtpUser: formulario.smtpUser,
+                    smtpPass: formulario.smtpPass,
+                    smtpFrom: formulario.smtpFrom,
                 },
             });
 
@@ -152,20 +177,21 @@ export default function PaginaConfiguracoes() {
         <div className="container-fluid">
             <div className="page-header">
                 <div className="card w-100">
-                    <div className="card-header">
-                        <h4 className="mb-1">Configurações</h4>
-                    </div>
                     <div className="card-body">
+                        <h5 className="">Configurações</h5>
+                        <hr />
                         <p className="text-muted mb-0">
-                            Controle os dados principais da empresa e a disponibilidade da aplicação.
+                            Controle os dados principais da empresa, a disponibilidade da aplicação e o envio de e-mails.
                         </p>
                     </div>
                 </div>
             </div>
 
             <form onSubmit={salvarConfiguracoesAplicacao}>
-                <div className="card">
+                <div className="card mb-3">
                     <div className="card-body">
+                        <h5 className="mb-0">Dados da aplicação</h5>
+                        <hr />
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <CampoTexto
@@ -239,19 +265,97 @@ export default function PaginaConfiguracoes() {
                         </div>
                     </div>
 
-                    <div className="card-footer d-flex justify-content-end">
-                        <Botao
-                            size="sm"
-                            label="Salvar configurações"
-                            icon={<FaSave />}
-                            onClick={() => undefined}
-                            disabled={carregando}
-                            loading={false}
-                            variant="outline-primary"
-                            type="submit"
-                            className=""
-                        />
+                    <div className="card-body">
+                        <h5 className="mb-0">Envio de e-mails</h5>
+                        <hr />
+
+                        <div className="row g-3">
+                            <div className="col-md-8">
+                                <CampoTexto
+                                    id="configuracao-smtp-host"
+                                    label="Servidor SMTP"
+                                    type="text"
+                                    value={formulario.smtpHost}
+                                    placeholder="smtp.exemplo.com"
+                                    onChange={(event) => atualizarCampoFormulario("smtpHost", event.target.value)}
+                                    disabled={carregando}
+                                    required
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-4">
+                                <CampoTexto
+                                    id="configuracao-smtp-port"
+                                    label="Porta SMTP"
+                                    type="number"
+                                    value={formulario.smtpPort}
+                                    placeholder="587"
+                                    onChange={(event) => atualizarCampoFormulario("smtpPort", event.target.value)}
+                                    disabled={carregando}
+                                    required
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-6">
+                                <CampoTexto
+                                    id="configuracao-smtp-user"
+                                    label="Usuário SMTP"
+                                    type="text"
+                                    value={formulario.smtpUser}
+                                    placeholder="usuario-smtp"
+                                    onChange={(event) => atualizarCampoFormulario("smtpUser", event.target.value)}
+                                    disabled={carregando}
+                                    required
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-6">
+                                <CampoTexto
+                                    id="configuracao-smtp-pass"
+                                    label="Senha SMTP"
+                                    type="password"
+                                    value={formulario.smtpPass}
+                                    placeholder="senha-smtp"
+                                    onChange={(event) => atualizarCampoFormulario("smtpPass", event.target.value)}
+                                    disabled={carregando}
+                                    required
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-12">
+                                <CampoTexto
+                                    id="configuracao-smtp-from"
+                                    label="Remetente"
+                                    type="text"
+                                    value={formulario.smtpFrom}
+                                    placeholder="nao-responder@exemplo.com"
+                                    onChange={(event) => atualizarCampoFormulario("smtpFrom", event.target.value)}
+                                    disabled={carregando}
+                                    required
+                                    className="mb-0"
+                                />
+                            </div>
+                        </div>
+                        <hr />
+                        <div className="text-end">
+                            <Botao
+                                size="sm"
+                                label="Salvar configurações"
+                                icon={<FaSave />}
+                                onClick={() => undefined}
+                                disabled={carregando}
+                                loading={false}
+                                variant="outline-primary"
+                                type="submit"
+                                className=""
+                            />
+                        </div>
                     </div>
+
                 </div>
             </form>
 
