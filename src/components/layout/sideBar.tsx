@@ -14,6 +14,7 @@ import {
     FaCog,
     FaHome,
     FaList,
+    FaSignOutAlt,
     FaTimes,
     FaUserCircle,
     FaUsers,
@@ -99,6 +100,7 @@ function ItemMenuLateral({
 export default function BarraLateral() {
     const [aberta, setAberta] = useState(false);
     const [carregandoVerificacao, setCarregandoVerificacao] = useState(false);
+    const [carregandoLogout, setCarregandoLogout] = useState(false);
 
     const versaoApp = "1.0.0";
 
@@ -111,7 +113,7 @@ export default function BarraLateral() {
                 { label: "Listar", href: "/usuarios", icon: <FaList /> },
             ],
         },
-        { label: "Configurações", href: "/configuracoes", icon: <FaCog /> },
+        { label: "Configurações Da Aplicação", href: "/configuracoes", icon: <FaCog /> },
     ];
 
     function abrirBarraLateral() {
@@ -120,6 +122,21 @@ export default function BarraLateral() {
 
     function fecharBarraLateral() {
         setAberta(false);
+    }
+
+    /**
+     * Encerra a sessão no servidor e redireciona o usuário para a tela inicial.
+     */
+    async function realizarLogoffUsuario() {
+        setCarregandoLogout(true);
+
+        try {
+            await requisitarAPI("/api/auth/logout", {
+                method: "POST",
+            });
+        } finally {
+            window.location.assign("/");
+        }
     }
 
     /**
@@ -222,9 +239,31 @@ export default function BarraLateral() {
                 </Nav>
 
                 <div className="sidebar-footer">
-                    <ItemMenuLateral
-                        item={{ label: "Minha conta", href: "/minhaConta", icon: <FaUserCircle /> }}
-                        aoNavegar={fecharBarraLateral}
+                    <Botao
+                        size="sm"
+                        label="Minha conta"
+                        icon={<span className="sidebar-link-icon"><FaUserCircle /></span>}
+                        type="button"
+                        variant="link"
+                        className="sidebar-link sidebar-link-button"
+                        onClick={() => {
+                            fecharBarraLateral();
+                            window.location.assign("/minhaConta");
+                        }}
+                        disabled={carregandoLogout}
+                        loading={false}
+                    />
+
+                    <Botao
+                        size="sm"
+                        label="Sair"
+                        icon={<span className="sidebar-link-icon"><FaSignOutAlt /></span>}
+                        type="button"
+                        variant="link"
+                        className="sidebar-link sidebar-link-button"
+                        onClick={realizarLogoffUsuario}
+                        disabled={carregandoLogout}
+                        loading={false}
                     />
 
                     <div className="sidebar-footer-version">
@@ -235,8 +274,8 @@ export default function BarraLateral() {
             </aside>
 
             <ModalCarregamento
-                show={carregandoVerificacao}
-                text="Verificando acesso..."
+                show={carregandoVerificacao || carregandoLogout}
+                text={carregandoLogout ? "Encerrando sessão..." : "Verificando acesso..."}
             />
         </>
     );
