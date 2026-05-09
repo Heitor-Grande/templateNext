@@ -3,7 +3,13 @@ import { obterPayloadJWT } from "@/utils/jwt";
 import { criarRespostaApi } from "@/utils/respostaApi";
 
 const NOME_COOKIE_SESSAO = "app_session";
-const ROTAS_PUBLICAS = ["/", "/api/auth/login"];
+const ROTAS_PUBLICAS = [
+    "/", 
+    "/api/auth/login", 
+    "/api/auth/recSenha", 
+    "/api/auth/recSenha/validarCodigo", 
+    "/api/auth/recSenha/alterarSenha"
+];
 
 // Verifica se o caminho da requisição é uma rota pública.
 function rotaPublica(caminho: string): boolean {
