@@ -1,5 +1,7 @@
+import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { criptografarValor, descriptografarValor } from "@/utils/criptografiaReversivel";
+import { verificarPermissaoAPI } from "@/utils/permissoes";
 import { criarRespostaApi } from "@/utils/respostaApi";
 import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 
@@ -68,8 +70,18 @@ function mapearConfiguracaoBancoParaApi(configuracao: ConfiguracaoAplicacaoBanco
  * Endpoint GET de configurações da aplicação.
  * Use para carregar o único registro de configuração disponível no sistema.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "configuracao",
+            acao: "visualizar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const resultado = await consultarBancoDados<ConfiguracaoAplicacaoBanco>(
             `
                 select
@@ -107,8 +119,18 @@ export async function GET() {
  * Endpoint PUT de configurações da aplicação.
  * Atualiza o único registro de configuração existente e salva credenciais SMTP criptografadas.
  */
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "configuracao",
+            acao: "atualizar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const body = await request.json() as AtualizacaoConfiguracaoBody;
 
         const fantasia = validarStringComConteudo(body.fantasia) ? body.fantasia.trim() : "";

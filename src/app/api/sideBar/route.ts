@@ -3,20 +3,28 @@ import { consultarBancoDados } from "@/services/database";
 import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { criarRespostaApi } from "@/utils/respostaApi";
 
+type RecursoPermissao = "usuario" | "configuracao" | "perfil";
+type AcaoPermissao = "visualizar" | "criar" | "atualizar" | "deletar";
+type PermissoesPerfil = Record<RecursoPermissao, Record<AcaoPermissao, boolean>>;
+
 type VerificacaoSideBar = {
     usuario_ativo: boolean;
     disponibilidade: string | null;
     fantasia: string | null;
+    perfil_id: number | null;
+    perfil_ativo: boolean | null;
+    permissoes: PermissoesPerfil | null;
 };
 
 type DadosVerificacaoSideBar = {
     acessoPermitido: boolean;
     fantasiaEmpresa: string;
+    permissoes: PermissoesPerfil | null;
 };
 
 /**
  * Endpoint GET de verificação da sidebar.
- * Use para confirmar acesso interno e carregar dados mínimos do layout, como fantasia da empresa.
+ * Use para confirmar acesso interno e carregar dados mínimos do layout e permissões do perfil.
  */
 export async function GET(request: NextRequest) {
     try {
@@ -29,6 +37,7 @@ export async function GET(request: NextRequest) {
                 {
                     acessoPermitido: false,
                     fantasiaEmpresa: "",
+                    permissoes: null,
                 },
                 401
             );
@@ -39,8 +48,12 @@ export async function GET(request: NextRequest) {
                 select
                     coalesce(u.ativo, false) as usuario_ativo,
                     c.disponibilidade,
-                    c.fantasia
+                    c.fantasia,
+                    u.perfil_id,
+                    p.ativo as perfil_ativo,
+                    p.permissoes
                 from usuarios u
+                left join perfil p on p.id = u.perfil_id
                 cross join lateral (
                     select
                         disponibilidade,
@@ -58,15 +71,18 @@ export async function GET(request: NextRequest) {
         const acessoPermitido = Boolean(
             verificacao?.usuario_ativo
             && verificacao.disponibilidade === "disponivel"
+            && verificacao.perfil_id
+            && verificacao.perfil_ativo
         );
 
         if (!acessoPermitido) {
             return criarRespostaApi<DadosVerificacaoSideBar>(
                 false,
-                "Usuário inativo ou aplicação indisponível.",
+                "Usuário inativo, sem perfil válido ou aplicação indisponível.",
                 {
                     acessoPermitido: false,
                     fantasiaEmpresa: verificacao?.fantasia ?? "",
+                    permissoes: null,
                 },
                 403
             );
@@ -78,6 +94,7 @@ export async function GET(request: NextRequest) {
             {
                 acessoPermitido: true,
                 fantasiaEmpresa: verificacao.fantasia ?? "Template",
+                permissoes: verificacao.permissoes,
             }
         );
     } catch {
@@ -87,6 +104,7 @@ export async function GET(request: NextRequest) {
             {
                 acessoPermitido: false,
                 fantasiaEmpresa: "",
+                permissoes: null,
             },
             500
         );

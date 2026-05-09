@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { normalizarCampoOpcional, validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 import { criarHash } from "@/utils/criptografia";
+import { verificarPermissaoAPI } from "@/utils/permissoes";
 import { criarRespostaApi } from "@/utils/respostaApi";
 
 type UsuarioListado = {
@@ -51,6 +52,16 @@ function normalizarPerfilId(valor: unknown): number | null {
  */
 export async function GET(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "usuario",
+            acao: "visualizar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const id = Number(request.nextUrl.searchParams.get("id"));
 
         if (Number.isInteger(id) && id > 0) {
@@ -115,6 +126,16 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "usuario",
+            acao: "criar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const body = await request.json() as CadastroUsuarioBody;
 
         const nome = validarStringComConteudo(body.nome) ? body.nome.trim() : "";
@@ -187,6 +208,16 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "usuario",
+            acao: "atualizar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const body = await request.json() as AtualizacaoUsuarioBody;
 
         const id = typeof body.id === "number" ? body.id : Number(body.id);
@@ -285,6 +316,16 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
     try {
+        const respostaPermissao = await verificarPermissaoAPI({
+            request: request,
+            recurso: "usuario",
+            acao: "deletar",
+        });
+
+        if (respostaPermissao) {
+            return respostaPermissao;
+        }
+
         const id = Number(request.nextUrl.searchParams.get("id"));
 
         if (!Number.isInteger(id) || id <= 0) {

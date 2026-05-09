@@ -28,9 +28,14 @@ type MenuItem = {
     children?: MenuItem[];
 };
 
+type RecursoPermissao = "usuario" | "configuracao" | "perfil";
+type AcaoPermissao = "visualizar" | "criar" | "atualizar" | "deletar";
+type PermissoesPerfil = Record<RecursoPermissao, Record<AcaoPermissao, boolean>>;
+
 type DadosVerificacaoSideBar = {
     acessoPermitido: boolean;
     fantasiaEmpresa: string;
+    permissoes: PermissoesPerfil | null;
 };
 
 /**
@@ -104,21 +109,35 @@ export default function BarraLateral() {
     const [carregandoVerificacao, setCarregandoVerificacao] = useState(false);
     const [carregandoLogout, setCarregandoLogout] = useState(false);
     const [fantasiaEmpresa, setFantasiaEmpresa] = useState("Template");
+    const [permissoesPerfil, setPermissoesPerfil] = useState<PermissoesPerfil | null>(null);
 
     const versaoApp = "1.0.0";
     const iniciaisEmpresa = fantasiaEmpresa.trim().slice(0, 2).toUpperCase() || "TP";
+    const podeVisualizarUsuario = Boolean(permissoesPerfil?.usuario.visualizar);
+    const podeVisualizarPerfil = Boolean(permissoesPerfil?.perfil.visualizar);
+    const podeVisualizarConfiguracao = Boolean(permissoesPerfil?.configuracao.visualizar);
+
+    const menusUsuario: MenuItem[] = [
+        ...(podeVisualizarUsuario
+            ? [{ label: "Lista de Usuários", href: "/usuarios", icon: <FaList /> }]
+            : []),
+        ...(podeVisualizarPerfil
+            ? [{ label: "Perfis", href: "/usuarios/perfil", icon: <FaUserShield /> }]
+            : []),
+    ];
 
     const menus: MenuItem[] = [
         { label: "Dashboard", href: "/menuPrincipal", icon: <FaHome /> },
-        {
-            label: "Usuarios",
-            icon: <FaUsers />,
-            children: [
-                { label: "Lista de Usuários", href: "/usuarios", icon: <FaList /> },
-                { label: "Perfis", href: "/usuarios/perfil", icon: <FaUserShield /> },
-            ],
-        },
-        { label: "Configurações", href: "/configuracoes", icon: <FaCog /> },
+        ...(menusUsuario.length > 0
+            ? [{
+                label: "Usuários",
+                icon: <FaUsers />,
+                children: menusUsuario,
+            }]
+            : []),
+        ...(podeVisualizarConfiguracao
+            ? [{ label: "Configurações", href: "/configuracoes", icon: <FaCog /> }]
+            : []),
     ];
 
     function abrirBarraLateral() {
@@ -145,8 +164,7 @@ export default function BarraLateral() {
     }
 
     /**
-     * Confirma se o usuário logado ainda pode acessar a área interna.
-     * Use ao carregar a sidebar para refletir mudanças de status do usuário ou da aplicação.
+     * Confirma se o usuário logado ainda pode acessar a área interna e carrega permissões do perfil.
      */
     const verificarAcessoAreaInterna = useCallback(async () => {
         setCarregandoVerificacao(true);
@@ -166,6 +184,8 @@ export default function BarraLateral() {
             if (dados.fantasiaEmpresa) {
                 setFantasiaEmpresa(dados.fantasiaEmpresa);
             }
+
+            setPermissoesPerfil(dados.permissoes);
         } catch {
             window.location.assign("/");
         } finally {
@@ -183,7 +203,6 @@ export default function BarraLateral() {
 
     return (
         <>
-            {/* Barra superior mobile para abrir a navegacao lateral. */}
             <nav className="sidebar-topbar">
                 <Botao
                     size="sm"
@@ -200,7 +219,6 @@ export default function BarraLateral() {
                 <span className="sidebar-topbar-brand">{fantasiaEmpresa}</span>
             </nav>
 
-            {/* Camada de fundo para fechar o menu ao clicar fora no mobile. */}
             {aberta && (
                 <Botao
                     size="sm"
@@ -214,7 +232,6 @@ export default function BarraLateral() {
                 />
             )}
 
-            {/* Navegacao lateral fixa no desktop e drawer no mobile. */}
             <aside className={`sidebar-shell ${aberta ? "open" : ""}`}>
                 <div className="sidebar-header">
                     <div className="sidebar-brand">
