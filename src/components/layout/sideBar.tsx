@@ -29,6 +29,7 @@ type MenuItem = {
 
 type DadosVerificacaoSideBar = {
     acessoPermitido: boolean;
+    fantasiaEmpresa: string;
 };
 
 /**
@@ -101,6 +102,7 @@ export default function BarraLateral() {
     const [aberta, setAberta] = useState(false);
     const [carregandoVerificacao, setCarregandoVerificacao] = useState(false);
     const [carregandoLogout, setCarregandoLogout] = useState(false);
+    const [fantasiaEmpresa, setFantasiaEmpresa] = useState("Template");
 
     const versaoApp = "1.0.0";
 
@@ -113,7 +115,7 @@ export default function BarraLateral() {
                 { label: "Listar", href: "/usuarios", icon: <FaList /> },
             ],
         },
-        { label: "Configurações Da Aplicação", href: "/configuracoes", icon: <FaCog /> },
+        { label: "Configurações", href: "/configuracoes", icon: <FaCog /> },
     ];
 
     function abrirBarraLateral() {
@@ -155,6 +157,11 @@ export default function BarraLateral() {
 
             if (!dados?.acessoPermitido) {
                 window.location.assign("/");
+                return;
+            }
+
+            if (dados.fantasiaEmpresa) {
+                setFantasiaEmpresa(dados.fantasiaEmpresa);
             }
         } catch {
             window.location.assign("/");
@@ -187,7 +194,7 @@ export default function BarraLateral() {
                     ariaLabel="Abrir menu"
                 />
 
-                <span className="sidebar-topbar-brand">Template</span>
+                <span className="sidebar-topbar-brand">{fantasiaEmpresa}</span>
             </nav>
 
             {/* Camada de fundo para fechar o menu ao clicar fora no mobile. */}
@@ -210,8 +217,8 @@ export default function BarraLateral() {
                     <div className="sidebar-brand">
                         <span className="sidebar-brand-mark">T</span>
                         <div>
-                            <strong>Template</strong>
-                            <small>Base App</small>
+                            <strong>{fantasiaEmpresa}</strong>
+                            <small className="text-center">Desenvolvido por Grande, Soluções Digitais.</small>
                         </div>
                     </div>
 

@@ -6,15 +6,17 @@ import { criarRespostaApi } from "@/utils/respostaApi";
 type VerificacaoSideBar = {
     usuario_ativo: boolean;
     disponibilidade: string | null;
+    fantasia: string | null;
 };
 
 type DadosVerificacaoSideBar = {
     acessoPermitido: boolean;
+    fantasiaEmpresa: string;
 };
 
 /**
  * Endpoint GET de verificação da sidebar.
- * Use para confirmar se o usuário logado continua ativo e se a aplicação está disponível.
+ * Use para confirmar acesso interno e carregar dados mínimos do layout, como fantasia da empresa.
  */
 export async function GET(request: NextRequest) {
     try {
@@ -24,7 +26,10 @@ export async function GET(request: NextRequest) {
             return criarRespostaApi<DadosVerificacaoSideBar>(
                 false,
                 "Sessão inválida ou expirada.",
-                { acessoPermitido: false },
+                {
+                    acessoPermitido: false,
+                    fantasiaEmpresa: "",
+                },
                 401
             );
         }
@@ -33,10 +38,13 @@ export async function GET(request: NextRequest) {
             `
                 select
                     coalesce(u.ativo, false) as usuario_ativo,
-                    c.disponibilidade
+                    c.disponibilidade,
+                    c.fantasia
                 from usuarios u
                 cross join lateral (
-                    select disponibilidade
+                    select
+                        disponibilidade,
+                        fantasia
                     from configuracao
                     limit 1
                 ) c
@@ -53,20 +61,33 @@ export async function GET(request: NextRequest) {
         );
 
         if (!acessoPermitido) {
-            return criarRespostaApi(
+            return criarRespostaApi<DadosVerificacaoSideBar>(
                 false,
                 "Usuário inativo ou aplicação indisponível.",
-                { acessoPermitido: false },
+                {
+                    acessoPermitido: false,
+                    fantasiaEmpresa: verificacao?.fantasia ?? "",
+                },
                 403
             );
         }
 
-        return criarRespostaApi(true, "Acesso liberado.", { acessoPermitido: true });
+        return criarRespostaApi<DadosVerificacaoSideBar>(
+            true,
+            "Acesso liberado.",
+            {
+                acessoPermitido: true,
+                fantasiaEmpresa: verificacao.fantasia ?? "Template",
+            }
+        );
     } catch {
         return criarRespostaApi<DadosVerificacaoSideBar>(
             false,
             "Não foi possível verificar o acesso.",
-            { acessoPermitido: false },
+            {
+                acessoPermitido: false,
+                fantasiaEmpresa: "",
+            },
             500
         );
     }
