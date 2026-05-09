@@ -2,6 +2,7 @@
 
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
+import { Seletor } from "@/components/inputs/select";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
@@ -15,6 +16,7 @@ type DadosMinhaConta = {
     email: string;
     telefone: string;
     documento: string;
+    perfil: OpcaoPerfil | null;
     senha: string;
     confirmarSenha: string;
     ativo: boolean;
@@ -23,12 +25,19 @@ type DadosMinhaConta = {
     atualizadoEm: string;
 };
 
+type OpcaoPerfil = {
+    label: string;
+    value: string;
+};
+
 type UsuarioMinhaContaApi = {
     id: number;
     nome: string;
     email: string;
     telefone: string | null;
     documento: string | null;
+    perfil_id: number | null;
+    perfil_nome: string | null;
     ativo: boolean;
     isAdmin: boolean;
     criado_em: string;
@@ -41,6 +50,7 @@ const estadoInicialFormulario: DadosMinhaConta = {
     email: "",
     telefone: "",
     documento: "",
+    perfil: null,
     senha: "",
     confirmarSenha: "",
     ativo: true,
@@ -59,7 +69,7 @@ export default function PaginaMinhaConta() {
     const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
 
-    function atualizarCampoFormulario(campo: keyof DadosMinhaConta, valor: string | boolean) {
+    function atualizarCampoFormulario(campo: keyof DadosMinhaConta, valor: string | boolean | OpcaoPerfil | null) {
         setFormulario((estadoAtual) => ({
             ...estadoAtual,
             [campo]: valor,
@@ -90,6 +100,12 @@ export default function PaginaMinhaConta() {
             email: usuario.email,
             telefone: usuario.telefone || "",
             documento: usuario.documento || "",
+            perfil: usuario.perfil_id
+                ? {
+                    label: usuario.perfil_nome || "Perfil vinculado",
+                    value: String(usuario.perfil_id),
+                }
+                : null,
             senha: "",
             confirmarSenha: "",
             ativo: usuario.ativo,
@@ -196,19 +212,6 @@ export default function PaginaMinhaConta() {
                 <div className="card">
                     <div className="card-body">
                         <div className="row g-3">
-                            <div className="col-md-4">
-                                <CampoTexto
-                                    id="minha-conta-id"
-                                    label="Código"
-                                    type="text"
-                                    value={formulario.id}
-                                    placeholder=""
-                                    onChange={(event) => atualizarCampoFormulario("id", event.target.value)}
-                                    disabled
-                                    required={false}
-                                    className="mb-0"
-                                />
-                            </div>
 
                             <div className="col-md-4">
                                 <CampoTexto
@@ -234,6 +237,20 @@ export default function PaginaMinhaConta() {
                                     onChange={(event) => atualizarCampoFormulario("email", event.target.value)}
                                     disabled={carregando}
                                     required
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-4">
+                                <Seletor
+                                    id="minha-conta-perfil"
+                                    label="Perfil"
+                                    options={formulario.perfil ? [formulario.perfil] : []}
+                                    value={formulario.perfil}
+                                    onChange={() => undefined}
+                                    placeholder="Sem perfil vinculado"
+                                    isDisabled
+                                    isClearable={false}
                                     className="mb-0"
                                 />
                             </div>
@@ -265,6 +282,7 @@ export default function PaginaMinhaConta() {
                                     className="mb-0"
                                 />
                             </div>
+
 
                             <div className="col-md-6">
                                 <CampoTexto

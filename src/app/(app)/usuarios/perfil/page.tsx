@@ -6,78 +6,76 @@ import { ColunaTabelaDados, TabelaDados } from "@/components/tables/dataTable";
 import { requisitarAPI } from "@/utils/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
-import ModalCadastroUsuario from "./components/modalCadastroUsuario";
+import ModalCadastroPerfil, { DadosPerfil } from "./components/modalCadastroPerfil";
 
-type UsuarioTabela = {
-    id: number;
-    nome: string;
-    email: string;
-    telefone: string | null;
-    documento: string | null;
-    perfil_nome: string | null;
-    ativo: boolean;
+type PerfilTabela = DadosPerfil & {
+    descricao: string;
     criado_em: string;
-};
+} & Record<string, unknown>;
 
 /**
- * Página de listagem de usuários.
+ * Conta quantas permissões estão habilitadas no perfil.
+ * Use para exibir um resumo simples na listagem.
+ */
+function contarPermissoesAtivas(perfil: DadosPerfil): number {
+    return Object.values(perfil.permissoes).reduce((total, permissoes) => {
+        return total + Object.values(permissoes).filter(Boolean).length;
+    }, 0);
+}
+
+/**
+ * Página de listagem de perfis.
  * Use como referência para telas de cadastro que precisam consumir API e renderizar a TabelaDados.
  */
-export default function PaginaUsuarios() {
-    const [usuarios, setUsuarios] = useState<UsuarioTabela[]>([]);
+export default function PaginaPerfis() {
+    const [perfis, setPerfis] = useState<PerfilTabela[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
-    const [idUsuarioSelecionado, setIdUsuarioSelecionado] = useState<number | null>(null);
+    const [idPerfilSelecionado, setIdPerfilSelecionado] = useState<number | null>(null);
 
-    const colunas: ColunaTabelaDados<UsuarioTabela>[] = [
-        { chave: "nome", titulo: "Nome" },
-        { chave: "email", titulo: "E-mail" },
+    const colunas: ColunaTabelaDados<PerfilTabela>[] = [
+        { chave: "nome", titulo: "Perfil" },
         {
-            chave: "telefone",
-            titulo: "Telefone",
-            renderizar: (usuario) => usuario.telefone || "-",
+            chave: "descricao",
+            titulo: "Descrição",
+            renderizar: (perfil) => perfil.descricao || "-",
         },
         {
-            chave: "documento",
-            titulo: "Documento",
-            renderizar: (usuario) => usuario.documento || "-",
-        },
-        {
-            chave: "perfil_nome",
-            titulo: "Perfil",
-            renderizar: (usuario) => usuario.perfil_nome || "-",
+            chave: "permissoes",
+            titulo: "Permissões",
+            renderizar: (perfil) => `${contarPermissoesAtivas(perfil)} permissões ativas`,
         },
         {
             chave: "ativo",
             titulo: "Status",
-            renderizar: (usuario) => (
-                <span className={`badge ${usuario.ativo ? "text-bg-success" : "text-bg-secondary"}`}>
-                    {usuario.ativo ? "Ativo" : "Inativo"}
+            renderizar: (perfil) => (
+                <span className={`badge ${perfil.ativo ? "text-bg-success" : "text-bg-secondary"}`}>
+                    {perfil.ativo ? "Ativo" : "Inativo"}
                 </span>
             ),
         },
     ];
 
     /**
-     * Carrega os usuários cadastrados na API.
+     * Carrega os perfis cadastrados na API.
      * Use ao abrir a tela e sempre que a listagem precisar ser atualizada.
      */
-    const carregarUsuariosCadastrados = useCallback(async () => {
+    const carregarPerfisCadastrados = useCallback(async () => {
         setCarregando(true);
         setMensagemResposta("");
 
         try {
-            const resposta = await requisitarAPI("/api/usuarios", {
+            const resposta = await requisitarAPI("/api/perfil", {
                 method: "GET",
             });
 
-            setUsuarios(Array.isArray(resposta.dados) ? resposta.dados : []);
+            setPerfis(Array.isArray(resposta.dados) ? resposta.dados as PerfilTabela[] : []);
             setMensagemResposta("");
         } catch (erro) {
             const mensagemErro = erro instanceof Error
                 ? erro.message
-                : "Não foi possível carregar os usuários.";
+                : "Não foi possível carregar os perfis.";
 
             setMensagemResposta(mensagemErro);
         } finally {
@@ -87,24 +85,29 @@ export default function PaginaUsuarios() {
 
     useEffect(() => {
         const carregamentoInicial = window.setTimeout(() => {
-            void carregarUsuariosCadastrados();
+            void carregarPerfisCadastrados();
         }, 0);
 
         return () => window.clearTimeout(carregamentoInicial);
-    }, [carregarUsuariosCadastrados]);
+    }, [carregarPerfisCadastrados]);
+
+    function abrirCadastroNovoPerfil() {
+        setIdPerfilSelecionado(null);
+        setModalCadastroAberto(true);
+    }
 
     /**
-     * Abre o modal com os dados do usuário selecionado na tabela.
+     * Abre o modal com os dados do perfil selecionado na tabela.
      */
-    function abrirCadastroUsuarioSelecionado(idUsuario: string | number | null) {
-        const idNormalizado = Number(idUsuario);
+    function abrirPerfilSelecionado(idPerfil: string | number | null) {
+        const idNormalizado = Number(idPerfil);
 
         if (!Number.isInteger(idNormalizado) || idNormalizado <= 0) {
-            setMensagemResposta("Não foi possível identificar o usuário selecionado.");
+            setMensagemResposta("Não foi possível identificar o perfil selecionado.");
             return;
         }
 
-        setIdUsuarioSelecionado(idNormalizado);
+        setIdPerfilSelecionado(idNormalizado);
         setModalCadastroAberto(true);
     }
 
@@ -113,25 +116,22 @@ export default function PaginaUsuarios() {
             <div className="page-header">
                 <div className="card w-100">
                     <div className="card-body">
-                        <h5 className="">Usuários</h5>
+                        <h5 className="">Perfis</h5>
                         <hr />
 
                         <div className="container-fluid">
                             <div className="row">
                                 <div className="col-lg-10 col-md-3 col-sm">
                                     <p className="text-muted mb-0">
-                                        Consulte os usuários cadastrados na aplicação.
+                                        Consulte e organize os perfis de acesso da aplicação.
                                     </p>
                                 </div>
                                 <div className="col-lg-2 col-md-3 col-sm">
                                     <Botao
                                         size="sm"
-                                        label="Novo usuário"
+                                        label="Novo perfil"
                                         icon={<FaPlus size={14} />}
-                                        onClick={() => {
-                                            setIdUsuarioSelecionado(null);
-                                            setModalCadastroAberto(true);
-                                        }}
+                                        onClick={abrirCadastroNovoPerfil}
                                         disabled={carregando}
                                         loading={carregando}
                                         variant="outline-primary"
@@ -147,22 +147,23 @@ export default function PaginaUsuarios() {
 
             <TabelaDados
                 colunas={colunas}
-                dados={usuarios}
+                dados={perfis}
                 carregando={carregando}
-                mensagemSemDados="Nenhum usuário cadastrado."
-                placeholderFiltro="Procurar por usuário"
+                mensagemSemDados="Nenhum perfil cadastrado."
+                placeholderFiltro="Procurar por perfil"
                 usaExcel={true}
                 usaClickLinha={true}
-                aoClicarLinha={abrirCadastroUsuarioSelecionado}
+                aoClicarLinha={abrirPerfilSelecionado}
+                nomeArquivoExcel="perfis"
             />
 
-            <ModalCadastroUsuario
+            <ModalCadastroPerfil
                 aberto={modalCadastroAberto}
-                idUsuario={idUsuarioSelecionado}
+                idPerfil={idPerfilSelecionado}
                 aoFechar={() => {
                     setModalCadastroAberto(false);
-                    setIdUsuarioSelecionado(null);
-                    carregarUsuariosCadastrados();
+                    setIdPerfilSelecionado(null);
+                    void carregarPerfisCadastrados();
                 }}
             />
 

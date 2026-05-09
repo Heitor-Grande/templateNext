@@ -11,7 +11,7 @@ create table public.configuracao (
     smtp_port text null,
     smtp_user text null,
     smtp_pass text null,
-    smtp_from text null;
+    smtp_from text null,
     constraint configuracao_pkey primary key (id)
 );
 

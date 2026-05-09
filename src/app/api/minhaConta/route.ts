@@ -11,6 +11,8 @@ type UsuarioMinhaConta = {
     email: string;
     telefone: string | null;
     documento: string | null;
+    perfil_id: number | null;
+    perfil_nome: string | null;
     ativo: boolean;
     isAdmin: boolean;
     criado_em: Date;
@@ -42,17 +44,20 @@ export async function GET(request: NextRequest) {
         const resultado = await consultarBancoDados<UsuarioMinhaConta>(
             `
                 select
-                    id,
-                    nome,
-                    email,
-                    telefone,
-                    documento,
-                    ativo,
-                    "isAdmin",
-                    criado_em,
-                    atualizado_em
-                from usuarios
-                where id = $1
+                    u.id,
+                    u.nome,
+                    u.email,
+                    u.telefone,
+                    u.documento,
+                    u.perfil_id,
+                    p.nome as perfil_nome,
+                    u.ativo,
+                    u."isAdmin",
+                    u.criado_em,
+                    u.atualizado_em
+                from usuarios u
+                left join perfil p on p.id = u.perfil_id
+                where u.id = $1
                 limit 1
             `,
             [idUsuario]
@@ -72,7 +77,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * Endpoint PUT de Minha conta.
- * Atualiza apenas os dados do usuário autenticado, ignorando qualquer id recebido no corpo da requisição.
+ * Atualiza apenas os dados editáveis do usuário autenticado, sem alterar o perfil vinculado.
  */
 export async function PUT(request: NextRequest) {
     try {

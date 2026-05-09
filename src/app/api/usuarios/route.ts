@@ -10,6 +10,8 @@ type UsuarioListado = {
     email: string;
     telefone: string | null;
     documento: string | null;
+    perfil_id: number | null;
+    perfil_nome: string | null;
     ativo: boolean;
     criado_em: Date;
 };
@@ -26,6 +28,7 @@ type CadastroUsuarioBody = {
     confirmarSenha?: string;
     telefone?: string;
     documento?: string;
+    perfilId?: unknown;
 };
 
 type AtualizacaoUsuarioBody = CadastroUsuarioBody & {
@@ -33,6 +36,14 @@ type AtualizacaoUsuarioBody = CadastroUsuarioBody & {
     ativo?: unknown;
     isAdmin?: unknown;
 };
+
+function normalizarPerfilId(valor: unknown): number | null {
+    if (valor === null || valor === "" || typeof valor === "undefined") {
+        return null;
+    }
+
+    return Number(valor);
+}
 
 /**
  * Endpoint GET de usuários.
@@ -46,17 +57,20 @@ export async function GET(request: NextRequest) {
             const resultadoUsuario = await consultarBancoDados<UsuarioDetalhado>(
                 `
                     select
-                        id,
-                        nome,
-                        email,
-                        telefone,
-                        documento,
-                        ativo,
-                        "isAdmin",
-                        criado_em,
-                        atualizado_em
-                    from usuarios
-                    where id = $1
+                        u.id,
+                        u.nome,
+                        u.email,
+                        u.telefone,
+                        u.documento,
+                        u.perfil_id,
+                        p.nome as perfil_nome,
+                        u.ativo,
+                        u."isAdmin",
+                        u.criado_em,
+                        u.atualizado_em
+                    from usuarios u
+                    left join perfil p on p.id = u.perfil_id
+                    where u.id = $1
                     limit 1
                 `,
                 [id]
@@ -74,15 +88,18 @@ export async function GET(request: NextRequest) {
         const resultado = await consultarBancoDados<UsuarioListado>(
             `
                 select
-                    id,
-                    nome,
-                    email,
-                    telefone,
-                    documento,
-                    ativo,
-                    criado_em
-                from usuarios
-                order by criado_em desc
+                    u.id,
+                    u.nome,
+                    u.email,
+                    u.telefone,
+                    u.documento,
+                    u.perfil_id,
+                    p.nome as perfil_nome,
+                    u.ativo,
+                    u.criado_em
+                from usuarios u
+                left join perfil p on p.id = u.perfil_id
+                order by u.criado_em desc
             `
         );
 
@@ -106,9 +123,14 @@ export async function POST(request: NextRequest) {
         const confirmarSenha = validarStringComConteudo(body.confirmarSenha) ? body.confirmarSenha : "";
         const telefone = normalizarCampoOpcional(body.telefone);
         const documento = normalizarCampoOpcional(body.documento);
+        const perfilId = normalizarPerfilId(body.perfilId);
 
         if (!nome || !validarEmail(email) || senha.length < 6) {
             return criarRespostaApi(false, "Informe nome, e-mail válido e senha com pelo menos 6 caracteres.", null, 400);
+        }
+
+        if (perfilId !== null && (!Number.isInteger(perfilId) || perfilId <= 0)) {
+            return criarRespostaApi(false, "Informe um perfil válido para o usuário.", null, 400);
         }
 
         if (senha !== confirmarSenha) {
@@ -125,9 +147,10 @@ export async function POST(request: NextRequest) {
                     senha_hash,
                     salt,
                     telefone,
-                    documento
+                    documento,
+                    perfil_id
                 )
-                values ($1, $2, $3, $4, $5, $6)
+                values ($1, $2, $3, $4, $5, $6, $7)
             `,
             [
                 nome,
@@ -136,6 +159,7 @@ export async function POST(request: NextRequest) {
                 senhaCriptografada.salt,
                 telefone,
                 documento,
+                perfilId,
             ]
         );
 
@@ -149,13 +173,17 @@ export async function POST(request: NextRequest) {
             return criarRespostaApi(false, "Já existe um usuário cadastrado com este e-mail.", null, 409);
         }
 
+        if (erro instanceof Error && "code" in erro && erro.code === "23503") {
+            return criarRespostaApi(false, "O perfil informado não foi encontrado.", null, 400);
+        }
+
         return criarRespostaApi(false, "Não foi possível cadastrar o usuário.", null, 500);
     }
 }
 
 /**
  * Endpoint PUT de usuários.
- * Atualiza dados cadastrais, status e senha opcional sem retornar informações sensíveis.
+ * Atualiza dados cadastrais, perfil, status e senha opcional sem retornar informações sensíveis.
  */
 export async function PUT(request: NextRequest) {
     try {
@@ -168,6 +196,7 @@ export async function PUT(request: NextRequest) {
         const confirmarSenha = validarStringComConteudo(body.confirmarSenha) ? body.confirmarSenha : "";
         const telefone = normalizarCampoOpcional(body.telefone);
         const documento = normalizarCampoOpcional(body.documento);
+        const perfilId = normalizarPerfilId(body.perfilId);
         const ativo = typeof body.ativo === "boolean" ? body.ativo : null;
         const isAdmin = typeof body.isAdmin === "boolean" ? body.isAdmin : null;
 
@@ -181,6 +210,10 @@ export async function PUT(request: NextRequest) {
 
         if ((telefone && telefone.length > 20) || (documento && documento.length > 20)) {
             return criarRespostaApi(false, "Telefone e documento devem respeitar o limite de caracteres.", null, 400);
+        }
+
+        if (perfilId !== null && (!Number.isInteger(perfilId) || perfilId <= 0)) {
+            return criarRespostaApi(false, "Informe um perfil válido para o usuário.", null, 400);
         }
 
         if (senha && senha.length < 6) {
@@ -201,12 +234,13 @@ export async function PUT(request: NextRequest) {
                     email = $2,
                     telefone = $3,
                     documento = $4,
-                    ativo = coalesce($5, ativo),
-                    "isAdmin" = coalesce($6, "isAdmin"),
-                    senha_hash = coalesce($7, senha_hash),
-                    salt = coalesce($8, salt),
+                    perfil_id = $5,
+                    ativo = coalesce($6, ativo),
+                    "isAdmin" = coalesce($7, "isAdmin"),
+                    senha_hash = coalesce($8, senha_hash),
+                    salt = coalesce($9, salt),
                     atualizado_em = now()
-                where id = $9
+                where id = $10
                 returning id
             `,
             [
@@ -214,6 +248,7 @@ export async function PUT(request: NextRequest) {
                 email,
                 telefone,
                 documento,
+                perfilId,
                 ativo,
                 isAdmin,
                 senhaCriptografada?.hash ?? null,
@@ -234,6 +269,10 @@ export async function PUT(request: NextRequest) {
 
         if (erro instanceof Error && "code" in erro && erro.code === "23505") {
             return criarRespostaApi(false, "Já existe um usuário cadastrado com este e-mail.", null, 409);
+        }
+
+        if (erro instanceof Error && "code" in erro && erro.code === "23503") {
+            return criarRespostaApi(false, "O perfil informado não foi encontrado.", null, 400);
         }
 
         return criarRespostaApi(false, "Não foi possível atualizar o usuário.", null, 500);

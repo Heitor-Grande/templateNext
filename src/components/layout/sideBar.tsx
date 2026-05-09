@@ -17,6 +17,7 @@ import {
     FaSignOutAlt,
     FaTimes,
     FaUserCircle,
+    FaUserShield,
     FaUsers,
 } from "react-icons/fa";
 
@@ -113,7 +114,8 @@ export default function BarraLateral() {
             label: "Usuarios",
             icon: <FaUsers />,
             children: [
-                { label: "Listar", href: "/usuarios", icon: <FaList /> },
+                { label: "Lista de Usuários", href: "/usuarios", icon: <FaList /> },
+                { label: "Perfis", href: "/usuarios/perfil", icon: <FaUserShield /> },
             ],
         },
         { label: "Configurações", href: "/configuracoes", icon: <FaCog /> },

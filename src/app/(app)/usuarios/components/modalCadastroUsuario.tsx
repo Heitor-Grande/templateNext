@@ -2,6 +2,7 @@
 
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
+import { Seletor } from "@/components/inputs/select";
 import ModalConfirmacao from "@/components/modals/confirmModal";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
@@ -10,12 +11,18 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { FaExclamationTriangle, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 
+type OpcaoPerfil = {
+    label: string;
+    value: string;
+};
+
 type DadosCadastroUsuario = {
     id: number | null;
     nome: string;
     email: string;
     telefone: string;
     documento: string;
+    perfil: OpcaoPerfil | null;
     ativo: boolean;
     isAdmin: boolean;
     criadoEm: string;
@@ -30,10 +37,18 @@ type UsuarioDetalhadoApi = {
     email: string;
     telefone: string | null;
     documento: string | null;
+    perfil_id: number | null;
+    perfil_nome: string | null;
     ativo: boolean;
     isAdmin: boolean;
     criado_em: string;
     atualizado_em: string;
+};
+
+type PerfilApi = {
+    id: number;
+    nome: string;
+    ativo: boolean;
 };
 
 interface ModalCadastroUsuarioProps {
@@ -48,6 +63,7 @@ const estadoInicialFormulario: DadosCadastroUsuario = {
     email: "",
     telefone: "",
     documento: "",
+    perfil: null,
     ativo: true,
     isAdmin: false,
     criadoEm: "",
@@ -74,6 +90,12 @@ function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastr
         email: usuario.email,
         telefone: usuario.telefone || "",
         documento: usuario.documento || "",
+        perfil: usuario.perfil_id
+            ? {
+                label: usuario.perfil_nome || "Perfil vinculado",
+                value: String(usuario.perfil_id),
+            }
+            : null,
         ativo: usuario.ativo,
         isAdmin: usuario.isAdmin,
         criadoEm: formatarDataHoraFormulario(usuario.criado_em),
@@ -85,7 +107,7 @@ function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastr
 
 /**
  * Modal local de cadastro e visualização de usuário.
- * Use no fluxo de usuários para cadastrar novos registros ou carregar dados de um usuário selecionado.
+ * Use no fluxo de usuários para cadastrar novos registros, editar dados e vincular um perfil.
  */
 export default function ModalCadastroUsuario({
     aberto,
@@ -93,6 +115,7 @@ export default function ModalCadastroUsuario({
     aoFechar,
 }: ModalCadastroUsuarioProps) {
     const [formulario, setFormulario] = useState<DadosCadastroUsuario>(estadoInicialFormulario);
+    const [opcoesPerfil, setOpcoesPerfil] = useState<OpcaoPerfil[]>([]);
     const [carregando, setCarregando] = useState(false);
     const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
@@ -100,12 +123,34 @@ export default function ModalCadastroUsuario({
 
     const estaVisualizandoUsuario = typeof idUsuario === "number" && idUsuario > 0;
 
-    function atualizarCampoFormulario(campo: keyof DadosCadastroUsuario, valor: string | boolean | number | null) {
+    function atualizarCampoFormulario(campo: keyof DadosCadastroUsuario, valor: string | boolean | number | OpcaoPerfil | null) {
         setFormulario((estadoAtual) => ({
             ...estadoAtual,
             [campo]: valor,
         }));
     }
+
+    /**
+     * Carrega os perfis ativos para preencher o seletor de vínculo do usuário.
+     */
+    const carregarPerfisDisponiveis = useCallback(async () => {
+        try {
+            const resposta = await requisitarAPI("/api/perfil", {
+                method: "GET",
+            });
+
+            const perfis = Array.isArray(resposta.dados) ? resposta.dados as PerfilApi[] : [];
+
+            setOpcoesPerfil(perfis
+                .filter((perfil) => perfil.ativo)
+                .map((perfil) => ({
+                    label: perfil.nome,
+                    value: String(perfil.id),
+                })));
+        } catch {
+            setMensagemResposta("Não foi possível carregar os perfis disponíveis.");
+        }
+    }, []);
 
     /**
      * Carrega os dados do usuário selecionado para preencher o formulário.
@@ -145,7 +190,6 @@ export default function ModalCadastroUsuario({
 
     /**
      * Executa a regra de cadastro ou edição do usuário dentro do próprio modal.
-     * Use esta função para validar, chamar API e tratar a resposta do fluxo.
      */
     async function cadastrarUsuario(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -168,6 +212,7 @@ export default function ModalCadastroUsuario({
                     email: formulario.email,
                     telefone: formulario.telefone,
                     documento: formulario.documento,
+                    perfilId: formulario.perfil?.value ?? null,
                     ativo: formulario.ativo,
                     isAdmin: formulario.isAdmin,
                     senha: formulario.senha,
@@ -175,10 +220,9 @@ export default function ModalCadastroUsuario({
                 },
             });
 
-            const mensagem =
-                typeof resposta.msg === "string"
-                    ? resposta.msg
-                    : "Não foi possível salvar o usuário.";
+            const mensagem = typeof resposta.msg === "string"
+                ? resposta.msg
+                : "Não foi possível salvar o usuário.";
 
             setMensagemResposta(mensagem);
             setFormulario(estadoInicialFormulario);
@@ -196,7 +240,6 @@ export default function ModalCadastroUsuario({
 
     /**
      * Executa a exclusão do usuário selecionado após confirmação.
-     * Use quando o back de DELETE estiver disponível em /api/usuarios.
      */
     async function deletarUsuario() {
         if (!formulario.id) {
@@ -214,10 +257,9 @@ export default function ModalCadastroUsuario({
                 method: "DELETE",
             });
 
-            const mensagem =
-                typeof resposta.msg === "string"
-                    ? resposta.msg
-                    : "Usuário excluído com sucesso.";
+            const mensagem = typeof resposta.msg === "string"
+                ? resposta.msg
+                : "Usuário excluído com sucesso.";
 
             setMensagemResposta(mensagem);
             setFormulario(estadoInicialFormulario);
@@ -250,6 +292,8 @@ export default function ModalCadastroUsuario({
         }
 
         const carregamentoInicial = window.setTimeout(() => {
+            void carregarPerfisDisponiveis();
+
             if (!idUsuario) {
                 setFormulario(estadoInicialFormulario);
                 return;
@@ -259,7 +303,7 @@ export default function ModalCadastroUsuario({
         }, 0);
 
         return () => window.clearTimeout(carregamentoInicial);
-    }, [aberto, idUsuario, carregarUsuarioSelecionado]);
+    }, [aberto, idUsuario, carregarUsuarioSelecionado, carregarPerfisDisponiveis]);
 
     return (
         <>
@@ -330,6 +374,20 @@ export default function ModalCadastroUsuario({
                             </div>
 
                             <div className="col-md-6">
+                                <Seletor
+                                    id="usuario-perfil"
+                                    label="Perfil"
+                                    options={opcoesPerfil}
+                                    value={formulario.perfil}
+                                    onChange={(opcao) => atualizarCampoFormulario("perfil", opcao)}
+                                    placeholder="Selecione o perfil"
+                                    isDisabled={carregando}
+                                    isClearable
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="col-md-3">
                                 <div className="form-check form-switch mt-4">
                                     <input
                                         id="usuario-ativo"
@@ -345,7 +403,7 @@ export default function ModalCadastroUsuario({
                                 </div>
                             </div>
 
-                            <div className="col-md-6">
+                            <div className="col-md-3">
                                 <div className="form-check form-switch mt-4">
                                     <input
                                         id="usuario-admin"

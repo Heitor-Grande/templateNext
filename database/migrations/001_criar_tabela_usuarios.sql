@@ -5,6 +5,7 @@ create table public.usuarios (
     senha_hash text not null,
     telefone varchar(20) null,
     documento varchar(20) null,
+    perfil_id bigint null,
     ativo bool default true not null,
     criado_em timestamptz default now() not null,
     atualizado_em timestamptz default now() not null,
