@@ -5,6 +5,7 @@ import { CampoTexto } from "@/components/inputs/input";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
+import ModalRecSenha from "./components/modalRecSenha";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -25,6 +26,7 @@ export default function PaginaInicial() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginMessage, setLoginMessage] = useState("");
+  const [modalRecSenhaAberto, setModalRecSenhaAberto] = useState(false);
 
   /**
    * Envia as credenciais para a API de login e exibe a resposta sem manipular tokens no front.
@@ -140,6 +142,17 @@ export default function PaginaInicial() {
                     className="mb-2"
                   />
 
+                  <div className="d-flex justify-content-end mb-3">
+                    <button
+                      type="button"
+                      className="btn btn-link login-link p-0"
+                      onClick={() => setModalRecSenhaAberto(true)}
+                      disabled={loading}
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+
                   <Botao
                     size="lg"
                     label="Entrar"
@@ -202,6 +215,11 @@ export default function PaginaInicial() {
       <ModalCarregamento
         show={loading}
         text="Validando suas credenciais..."
+      />
+
+      <ModalRecSenha
+        isOpen={modalRecSenhaAberto}
+        onClose={() => setModalRecSenhaAberto(false)}
       />
     </div>
   );
