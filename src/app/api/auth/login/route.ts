@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
 import { validarHash } from "@/utils/criptografia";
 import { criarJWT } from "@/utils/jwt";
+import { verificarRateLimitPorIp } from "@/utils/rateLimit";
 import { criarRespostaApi } from "@/utils/respostaApi";
 import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 
@@ -44,6 +45,17 @@ function criarRespostaCredenciaisInvalidas(mensagem: string) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const respostaRateLimit = verificarRateLimitPorIp({
+            request: request,
+            identificador: "login",
+            limite: 5, // Limite de 5 tentativas
+            janelaMs: 15 * 60 * 1000, // Janela de 15 minutos
+        });
+
+        if (respostaRateLimit) {
+            return respostaRateLimit;
+        }
+
         const body = await request.json() as LoginBody;
         const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
         const password = validarStringComConteudo(body.password) ? body.password : "";

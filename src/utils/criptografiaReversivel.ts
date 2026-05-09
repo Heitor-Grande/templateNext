@@ -54,10 +54,10 @@ export function descriptografarValor(valorCriptografado: string | null): string 
 }
 
 function obterChaveCriptografia(): Buffer {
-    const segredo = process.env.JWT_SECRET;
+    const segredo = process.env.JWT_SECRET_REVERSIVEL;
 
     if (!segredo) {
-        throw new Error("JWT_SECRET não configurado.");
+        throw new Error("JWT_SECRET_REVERSIVEL não configurado.");
     }
 
     return createHash("sha256").update(segredo).digest();

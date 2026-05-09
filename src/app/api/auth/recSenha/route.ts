@@ -3,6 +3,7 @@ import { consultarBancoDados } from "@/services/database";
 import { enviarEmail } from "@/services/email";
 import { criarHash } from "@/utils/criptografia";
 import { criarJWTRecuperacaoSenha, obterPayloadRecuperacaoSenhaJWT } from "@/utils/jwt";
+import { verificarRateLimitPorIp } from "@/utils/rateLimit";
 import { criarRespostaApi } from "@/utils/respostaApi";
 import { validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 
@@ -140,6 +141,17 @@ async function validarTokenCodigoRecuperacao(token: string, codigo: string): Pro
  */
 export async function POST(request: NextRequest) {
     try {
+        const respostaRateLimit = verificarRateLimitPorIp({
+            request: request,
+            identificador: "recuperacao-senha-envio",
+            limite: 3,
+            janelaMs: 15 * 60 * 1000,
+        });
+
+        if (respostaRateLimit) {
+            return respostaRateLimit;
+        }
+
         const body = await request.json() as RecuperacaoSenhaBody;
         const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
 
@@ -184,6 +196,17 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
     try {
+        const respostaRateLimit = verificarRateLimitPorIp({
+            request: request,
+            identificador: "recuperacao-senha-codigo",
+            limite: 5,
+            janelaMs: 15 * 60 * 1000,
+        });
+
+        if (respostaRateLimit) {
+            return respostaRateLimit;
+        }
+
         const body = await request.json() as ValidacaoCodigoBody;
         const codigo = validarStringComConteudo(body.codigo) ? body.codigo.trim() : "";
         const token = validarStringComConteudo(body.token) ? body.token : "";
@@ -210,6 +233,17 @@ export async function PUT(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
     try {
+        const respostaRateLimit = verificarRateLimitPorIp({
+            request: request,
+            identificador: "recuperacao-senha-alteracao",
+            limite: 5,
+            janelaMs: 15 * 60 * 1000,
+        });
+
+        if (respostaRateLimit) {
+            return respostaRateLimit;
+        }
+
         const body = await request.json() as AlteracaoSenhaBody;
         const codigo = validarStringComConteudo(body.codigo) ? body.codigo.trim() : "";
         const token = validarStringComConteudo(body.token) ? body.token : "";

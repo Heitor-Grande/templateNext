@@ -116,6 +116,30 @@ Quando o template precisar de um cliente HTTP base, prefira algo simples e facil
 - Centralize as respostas de erro no `catch`, tratando casos conhecidos, como violacao de unicidade, antes da resposta generica.
 - Evite multiplos `try/catch` dentro da mesma funcao de rota, salvo quando houver uma justificativa tecnica clara.
 
+## Rate limit
+
+Use `src/utils/rateLimit.ts` para limitar tentativas em rotas sensiveis por IP, como login, recuperacao de senha, validacao de codigo e alteracao de senha.
+
+Padrao desejado:
+
+```ts
+const respostaRateLimit = verificarRateLimitPorIp({
+    request: request,
+    identificador: "login",
+    limite: 5,
+    janelaMs: 15 * 60 * 1000,
+});
+
+if (respostaRateLimit) {
+    return respostaRateLimit;
+}
+```
+
+- Aplique o rate limit no inicio do `try`, antes de consultas ao banco, envio de e-mail ou validacao de credenciais.
+- Use um `identificador` especifico para cada fluxo, por exemplo `login`, `recuperacao-senha-envio`, `recuperacao-senha-codigo` e `recuperacao-senha-alteracao`.
+- O util atual guarda tentativas em memoria do processo. Ele atende ao template e ao desenvolvimento local, mas para producao com multiplas instancias, serverless ou balanceamento de carga, substitua por um armazenamento compartilhado, como Redis, banco de dados ou servico gerenciado de rate limit.
+- Mantenha a resposta padronizada pelo contrato da API, usando status `429` quando o limite for excedido.
+
 ## Consultas à API no Frontend
 
 Use `src/utils/api.ts` para chamadas do front para o back. Nao espalhe `fetch` diretamente em componentes, paginas ou hooks.
