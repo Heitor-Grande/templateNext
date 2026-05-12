@@ -1,5 +1,6 @@
 "use client";
 
+import { Botao } from "@/components/inputs/button";
 import { ReactNode, useMemo, useState } from "react";
 import { FaFileExcel, FaSearch } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -167,15 +168,17 @@ export function TabelaDados<T extends Record<string, unknown>>({
                 </div>
 
                 {usaExcel && (
-                    <button
-                        type="button"
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-emerald-600 bg-white px-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    <Botao
+                        size="sm"
+                        icon={<FaFileExcel />}
                         onClick={exportarDadosExcel}
                         disabled={carregando || dadosFiltrados.length === 0}
-                    >
-                        <FaFileExcel />
-
-                    </button>
+                        loading={false}
+                        variant="outline-success"
+                        type="button"
+                        className="min-h-10"
+                        ariaLabel="Exportar dados para Excel"
+                    />
                 )}
             </div>
 
