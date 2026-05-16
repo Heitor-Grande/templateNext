@@ -1,21 +1,26 @@
 # AGENTS.md
 
-Orientacoes para agentes e desenvolvedores que forem trabalhar neste template.
+Orientações técnicas para agentes e desenvolvedores que forem trabalhar neste template.
 
-## Objetivo do projeto
+## Objetivo Do Projeto
 
-Este repositorio e um template padrao para iniciar novas aplicacoes com Next.js, TypeScript e Bootstrap. Ele deve funcionar como uma base reutilizavel, com estrutura, componentes, modais, hooks, services e utils prontos para evolucao em novos projetos.
+Este repositório é um template padrão para iniciar novas aplicações com Next.js, TypeScript, PostgreSQL e uma base administrativa reutilizável. Ele deve funcionar como ponto de partida genérico, com estrutura, autenticação, componentes, modais, services e utils prontos para evolução.
 
-Ao alterar este repositorio, priorize solucoes genericas e reaproveitaveis. Evite incluir regras de negocio especificas de uma aplicacao final diretamente no template.
+Ao alterar este repositório, priorize soluções genéricas e reaproveitáveis. Evite incluir regras de negócio específicas de uma aplicação final diretamente no template.
 
-## Stack e comandos
+## Stack E Comandos
 
 - Next.js com App Router em `src/app`.
 - TypeScript com `strict` habilitado.
-- Bootstrap e React Bootstrap para UI.
+- Bootstrap e React Bootstrap para modais e base visual.
+- Tailwind CSS importado em `src/app/cssGlobal.css` para classes utilitárias.
 - `react-select` para selects.
-- `react-icons` para icones.
-- Alias de importacao: `@/*` aponta para `src/*`.
+- `react-icons` para ícones.
+- `pg` para PostgreSQL.
+- `nodemailer` para envio de e-mail.
+- `jsonwebtoken` para autenticação.
+- `xlsx` para exportação de tabelas.
+- Alias de importação: `@/*` aponta para `src/*`.
 
 Comandos principais:
 
@@ -25,102 +30,229 @@ npm run build
 npm run lint
 ```
 
-Antes de finalizar alteracoes relevantes, rode pelo menos `npm run lint`. Para mudancas estruturais ou de runtime, rode tambem `npm run build`.
+Antes de finalizar alterações relevantes, rode pelo menos `npm run lint`. Para mudanças estruturais, autenticação, APIs, banco ou runtime, rode também `npm run build`.
 
-## Estrutura esperada
+## Estrutura Esperada
 
-Mantenha a organizacao por responsabilidade:
+Mantenha a organização por responsabilidade:
 
 ```text
 src/
-  app/                 Rotas, layouts, paginas e estilos globais
+  app/                 Rotas, layouts, páginas, APIs e estilos globais
   components/
-    inputs/            Inputs, botoes, selects e controles reutilizaveis
+    inputs/            Inputs, botões, selects e controles reutilizáveis
     layout/            Componentes de estrutura visual, como sidebar/navbar
-    modals/            Modais prontos para uso em qualquer aplicacao
-  hooks/               Hooks customizados reutilizaveis
-  services/            Clientes HTTP e integracoes com APIs
-  utils/               Funcoes puras, formatadores, validadores e helpers
+    modals/            Modais prontos para uso em qualquer aplicação
+    tables/            Tabelas reutilizáveis
+  services/            Clientes HTTP, banco de dados e integrações externas
+  hooks/               Hooks customizados reutilizáveis, quando existirem
+  utils/               Funções puras, validadores, helpers e utilitários server-side
+database/
+  migrations/          Scripts SQL da base inicial
 ```
 
-Se uma pasta ainda nao existir, crie apenas quando houver codigo real para colocar nela.
+Se uma pasta ainda não existir, crie apenas quando houver código real para colocar nela.
 
-## Diretrizes para novos componentes
+## Funcionalidades Base
+
+O template contém:
+
+- login com cookie `httpOnly` e JWT;
+- recuperação de senha com token temporário;
+- proxy de proteção para páginas e APIs privadas;
+- layout autenticado com barra lateral responsiva;
+- menu lateral filtrado por permissões do perfil;
+- seleção de empresa de navegação por usuário;
+- cadastro de usuários;
+- cadastro de perfis e permissões;
+- cadastro de empresas;
+- vínculo usuário/empresa e empresa padrão;
+- configurações gerais e SMTP;
+- minha conta;
+- tabela reutilizável com filtro, paginação, clique em linha e exportação Excel.
+
+Essas funcionalidades devem continuar servindo como base genérica. Não trate este template como um domínio final.
+
+## Diretrizes Para Componentes
 
 - Componentes interativos devem usar `"use client"` no topo do arquivo.
-- Prefira componentes pequenos, tipados e com props explicitas.
-- Use React Bootstrap quando o componente representar UI Bootstrap.
+- Prefira componentes pequenos, tipados e com props explícitas.
+- Use React Bootstrap quando o componente representar UI Bootstrap, especialmente modais.
 - Use o alias `@/` para imports de arquivos dentro de `src`.
-- Evite acoplar componentes reutilizaveis a uma rota especifica.
-- Evite textos, estilos ou comportamentos de um dominio especifico dentro de componentes base.
-- Mantenha nomes de arquivos consistentes com o padrao atual do projeto.
+- Evite acoplar componentes reutilizáveis a uma rota específica.
+- Evite textos, estilos ou comportamentos de um domínio específico dentro de componentes base.
+- Mantenha nomes de arquivos consistentes com o padrão atual do projeto.
+
+Componentes atuais:
+
+- `src/components/inputs/button.tsx`: `Botao`, botão base com ícone, loading, variações e estado desabilitado.
+- `src/components/inputs/input.tsx`: `CampoTexto`, input controlado com label, ajuda e acessibilidade básica.
+- `src/components/inputs/select.tsx`: `Seletor`, wrapper controlado de `react-select`.
+- `src/components/tables/dataTable.tsx`: `TabelaDados`, listagem com filtro local, paginação, clique em linha e exportação Excel.
+- `src/components/VinculoUsuarioEmpresa.tsx`: seção reutilizável para gerenciar vínculos reais entre usuários e empresas.
+- `src/components/layout/sideBar.tsx`: barra lateral autenticada, responsiva, com menu por permissão e seleção de empresa.
 
 ## Modais
 
 Os modais base ficam em `src/components/modals`.
 
-Padroes desejados:
+Padrões desejados:
 
 - Usar `react-bootstrap/Modal`.
 - Receber estado aberto/fechado por props, como `isOpen` ou `show`.
 - Receber callbacks por props, como `onClose`, `onCancel` e `onConfirm`.
-- Nao buscar dados diretamente dentro do modal.
-- Nao executar regra de negocio especifica dentro do modal.
-- Manter modais genericos, por exemplo: confirmacao, resposta, loading, formulario generico.
+- Não buscar dados diretamente dentro de modais genéricos.
+- Não executar regra de negócio específica dentro de modais genéricos.
+- Manter modais base reutilizáveis.
 
-Quando criar um novo modal, pense nele como algo que possa ser usado por qualquer aplicacao criada a partir deste template.
+Modais atuais:
 
-Para modais locais de uma tela ou modulo, concentre a regra de negocio dentro do proprio modal. O componente pai deve passar apenas props de controle como `aberto` e `aoFechar`, evitando callbacks como `aoSalvar` quando a acao pertence ao fluxo do modal.
+- `confirmModal.tsx`: confirmação genérica.
+- `responseModal.tsx`: exibição de mensagens de sucesso, erro ou validação.
+- `loading.tsx`: bloqueio visual durante processamentos.
+- `src/app/components/modalRecSenha.tsx`: modal do fluxo de recuperação de senha, específico da tela inicial.
+
+Para modais locais de uma tela ou módulo, concentre a regra de negócio dentro do próprio modal. O componente pai deve passar apenas props de controle como `aberto` e `aoFechar`, evitando callbacks como `aoSalvar` quando a ação pertence ao fluxo do modal.
 
 ## Hooks
 
-Hooks reutilizaveis ficam em `src/hooks`.
+Hooks reutilizáveis ficam em `src/hooks`.
 
-Padroes desejados:
+Padrões desejados:
 
 - Nomear hooks com prefixo `use`, por exemplo `useLoading`.
-- Encapsular estado e comportamento reutilizavel.
-- Nao misturar UI dentro de hooks.
-- Evitar dependencia de telas especificas.
-- Retornar uma API simples e previsivel.
+- Encapsular estado e comportamento reutilizável.
+- Não misturar UI dentro de hooks.
+- Evitar dependência de telas específicas.
+- Retornar uma API simples e previsível.
 
 Exemplos de bons candidatos para hooks do template:
 
 - controle de loading;
 - controle de modal;
 - debounce;
-- paginacao;
-- formularios simples;
-- chamadas assincronas padronizadas.
+- paginação;
+- formulários simples;
+- chamadas assíncronas padronizadas.
 
 ## Services
 
 Services devem ficar em `src/services`.
 
-Use esta camada para centralizar integracoes externas e chamadas HTTP. Nao espalhe `fetch`, configuracoes de headers ou tratamento padrao de erro por componentes de tela.
+Use esta camada para centralizar integrações externas e chamadas server-side.
 
-Padroes desejados:
+Services atuais:
 
-- Separar clientes genericos de services especificos.
-- Manter URL base, headers e tratamento comum em um ponto central.
+- `database.ts`: expõe `consultarBancoDados`, usando `pg` e variáveis `POSTGRES_*`. Sempre passe parâmetros no array para evitar SQL injection.
+- `email.ts`: expõe `enviarEmail`, carregando SMTP da tabela `configuracao` e descriptografando valores sensíveis antes de enviar.
+
+Padrões desejados:
+
+- Separar clientes genéricos de services específicos.
+- Manter URL base, conexão, headers e tratamento comum em um ponto central.
 - Retornar dados tipados.
-- Nao colocar estado React dentro de services.
-- Nao importar componentes dentro de services.
+- Não colocar estado React dentro de services.
+- Não importar componentes dentro de services.
 
-Quando o template precisar de um cliente HTTP base, prefira algo simples e facil de substituir pela aplicacao final.
+## Rotas De API
 
-## Rotas de API
+- Funções de rotas da API, como `GET`, `POST`, `PUT`, `PATCH` e `DELETE`, devem concentrar sua execução dentro de um único bloco `try/catch`.
+- Valide corpo, query params, regras básicas, permissões e chamadas ao banco dentro desse `try`.
+- Aplique `verificarRateLimitPorIp` no início do `try` quando a rota for sensível.
+- Aplique `verificarPermissaoAPI` antes de consultas ou alterações protegidas por perfil.
+- Centralize as respostas de erro no `catch`, tratando casos conhecidos, como violação de unicidade, antes da resposta genérica.
+- Evite múltiplos `try/catch` dentro da mesma função de rota, salvo quando houver uma justificativa técnica clara.
+- Toda resposta deve usar `criarRespostaApi`.
 
-- Funcoes de rotas da API, como `GET`, `POST`, `PUT`, `PATCH` e `DELETE`, devem concentrar sua execucao dentro de um unico bloco `try/catch`.
-- Valide o corpo da requisicao, regras basicas e chamadas ao banco dentro desse `try`.
-- Centralize as respostas de erro no `catch`, tratando casos conhecidos, como violacao de unicidade, antes da resposta generica.
-- Evite multiplos `try/catch` dentro da mesma funcao de rota, salvo quando houver uma justificativa tecnica clara.
+Contrato obrigatório:
 
-## Rate limit
+```ts
+{
+    sucesso: boolean;
+    msg: string;
+    dados: unknown | null;
+}
+```
 
-Use `src/utils/rateLimit.ts` para limitar tentativas em rotas sensiveis por IP, como login, recuperacao de senha, validacao de codigo e alteracao de senha.
+## Consultas À API No Frontend
 
-Padrao desejado:
+Use `src/utils/api.ts` para chamadas do front para o back. Não espalhe `fetch` diretamente em componentes, páginas ou hooks.
+
+Exemplo:
+
+```ts
+const resposta = await requisitarAPI("/api/recurso", {
+    method: "POST",
+    body: dados,
+});
+```
+
+Mesmo em consultas `GET`, mantenha o `method` explícito para padronizar a leitura do código.
+
+Toda função do front que fizer requisição ao back deve concentrar a chamada dentro de um único bloco `try/catch`. Se cair no `catch`, exiba a mensagem usando `ModalResposta`.
+
+## Autenticação E Proxy
+
+O arquivo `src/proxy.ts` valida o cookie `app_session` antes de liberar rotas protegidas. Use `obterPayloadJWT` ou `validarJWT` de `src/utils/jwt.ts` para validar assinatura e expiração do token.
+
+O JWT de sessão deve incluir `idUsuario`, `ativo` e `dataLogin`. O proxy usa o payload validado para liberar apenas usuários com `ativo` igual a `true`, evitando consulta ao banco a cada requisição protegida.
+
+Quando uma rota de API precisar do id do usuário logado, use `obterIdUsuarioAutenticado` de `src/utils/autenticacao.ts`. Não leia nem decodifique o cookie `app_session` diretamente dentro da rota quando essa função atender ao caso.
+
+Mantenha rotas públicas explícitas dentro do proxy. Para APIs protegidas sem JWT válido, retorne resposta padronizada com status `401`; para páginas protegidas, redirecione para `/`.
+
+## Permissões
+
+As permissões ficam no campo `perfil.permissoes` em JSON e seguem recursos e ações tipadas:
+
+```ts
+type RecursoPermissao = "usuario" | "empresa" | "configuracao" | "perfil" | "dashboard";
+type AcaoPermissao = "visualizar" | "criar" | "atualizar" | "deletar";
+```
+
+Use `verificarPermissaoAPI` em APIs protegidas. A função retorna `null` quando permitido ou uma resposta padronizada quando a sessão, usuário, perfil ou permissão for inválida.
+
+A barra lateral usa as permissões carregadas pela rota `/api/sideBar` para montar somente os menus disponíveis ao usuário.
+
+## Empresas E Vínculos
+
+O template possui cadastro de empresas e relação muitos-para-muitos entre usuários e empresas por `usuarios_empresas`.
+
+Padrões:
+
+- A tabela `usuarios_empresas` representa vínculo existente. Remover vínculo significa excluir o registro.
+- O campo `usuarios.empresa_padrao` guarda a empresa padrão opcional do usuário.
+- Use `VinculoUsuarioEmpresa` nos formulários de usuário e empresa.
+- Use `verificarEmpresaPertenceAoUsuario` quando uma API precisar garantir que a empresa informada pertence ao usuário autenticado.
+- Use `verificarUsuarioAdministrador` quando a operação depender do campo `"isAdmin"` da tabela `usuarios`.
+
+## Utils
+
+Utils devem ficar em `src/utils`.
+
+Use esta pasta para funções puras, helpers compartilhados e utilitários server-side pequenos. Evite colocar regra de negócio extensa em `utils`; se a função depender de contexto de domínio, ela provavelmente pertence a um service, hook ou módulo específico da aplicação final.
+
+Utils atuais e uso esperado:
+
+- `api.ts`: `requisitarAPI` e tipo `RespostaApi`. Use no frontend para centralizar `method`, headers JSON, body e tratamento de erro.
+- `autenticacao.ts`: `obterIdUsuarioAutenticado`. Use em APIs para obter o usuário logado pelo cookie `app_session`.
+- `criptografia.ts`: `criarHash` e `validarHash`. Use para senhas e valores que não devem ser recuperados em texto puro.
+- `criptografiaReversivel.ts`: `criptografarValor` e `descriptografarValor`. Use somente server-side para valores sensíveis que precisam ser recuperados, como SMTP.
+- `empresaUsuario.ts`: `verificarEmpresaPertenceAoUsuario`. Use para validar acesso por empresa antes de consultas ou alterações.
+- `jwt.ts`: `criarJWT`, `criarJWTRecuperacaoSenha`, `obterPayloadJWT`, `obterPayloadRecuperacaoSenhaJWT` e `validarJWT`. Use para sessão e recuperação de senha.
+- `permissoes.ts`: `verificarPermissaoAPI` e tipos de recurso/ação. Use para proteger APIs por perfil.
+- `rateLimit.ts`: `obterIpRequisicao` e `verificarRateLimitPorIp`. Use em login, recuperação de senha e outras rotas sensíveis.
+- `respostaApi.ts`: `criarRespostaApi` e tipo `RespostaApi`. Use em todas as rotas de API.
+- `usuarioAdmin.ts`: `verificarUsuarioAdministrador`. Use em rotas que exigem usuário administrador.
+- `validacoes.ts`: `validarStringComConteudo`, `validarEmail` e `normalizarCampoOpcional`. Use para validar entrada antes de normalizar ou salvar.
+
+Antes de criar uma nova validação, verifique se ela pertence a `validacoes.ts` ou se é uma regra específica do módulo.
+
+## Rate Limit
+
+Use `src/utils/rateLimit.ts` para limitar tentativas em rotas sensíveis por IP, como login, recuperação de senha, validação de código e alteração de senha.
+
+Padrão desejado:
 
 ```ts
 const respostaRateLimit = verificarRateLimitPorIp({
@@ -135,134 +267,95 @@ if (respostaRateLimit) {
 }
 ```
 
-- Aplique o rate limit no inicio do `try`, antes de consultas ao banco, envio de e-mail ou validacao de credenciais.
-- Use um `identificador` especifico para cada fluxo, por exemplo `login`, `recuperacao-senha-envio`, `recuperacao-senha-codigo` e `recuperacao-senha-alteracao`.
-- O util atual guarda tentativas em memoria do processo. Ele atende ao template e ao desenvolvimento local, mas para producao com multiplas instancias, serverless ou balanceamento de carga, substitua por um armazenamento compartilhado, como Redis, banco de dados ou servico gerenciado de rate limit.
-- Mantenha a resposta padronizada pelo contrato da API, usando status `429` quando o limite for excedido.
+- Aplique o rate limit no início do `try`, antes de consultas ao banco, envio de e-mail ou validação de credenciais.
+- Use um `identificador` específico para cada fluxo.
+- O util atual guarda tentativas em memória do processo. Ele atende ao template e ao desenvolvimento local, mas para produção com múltiplas instâncias, serverless ou balanceamento de carga, substitua por armazenamento compartilhado.
+- Mantenha resposta padronizada com status `429` quando o limite for excedido.
 
-## Consultas à API no Frontend
-
-Use `src/utils/api.ts` para chamadas do front para o back. Nao espalhe `fetch` diretamente em componentes, paginas ou hooks.
-
-Exemplo:
-
-```ts
-const resposta = await requisitarAPI("/api/recurso", {
-    method: "POST",
-    body: dados,
-});
-```
-
-Mesmo em consultas `GET`, mantenha o `method` explicito para padronizar a leitura do codigo.
-
-Toda funcao do front que fizer requisicao ao back deve concentrar a chamada dentro de um unico bloco `try/catch`. Se cair no `catch`, exiba a mensagem usando `ModalResposta`.
-
-## Respostas de API
-
-Toda resposta de rota de API deve seguir o contrato:
-
-```ts
-{
-    sucesso: boolean;
-    msg: string;
-    dados: unknown | null;
-}
-```
-
-Use `src/utils/respostaApi.ts` para criar respostas padronizadas no back. O campo `dados` e obrigatorio e deve ser enviado como `null` quando nao houver conteudo para retornar.
-
-## Autenticacao e Proxy
-
-O arquivo `src/proxy.ts` valida o cookie `app_session` antes de liberar rotas protegidas. Use `validarJWT` de `src/utils/jwt.ts` para validar assinatura e expiracao do token.
-
-O JWT de sessao deve incluir `idUsuario` e `ativo`. O proxy usa o payload validado para liberar apenas usuarios com `ativo` igual a `true`, evitando consulta ao banco a cada requisicao protegida.
-
-Quando uma rota de API precisar do id do usuario logado, use `obterIdUsuarioAutenticado` de `src/utils/autenticacao.ts`. Nao leia nem decodifique o cookie `app_session` diretamente dentro da rota quando essa funcao atender ao caso.
-
-Mantenha rotas publicas explicitas dentro do proxy. Para APIs protegidas sem JWT valido, retorne resposta padronizada com status `401`; para paginas protegidas, redirecione para `/`.
-
-## Utils
-
-Utils devem ficar em `src/utils`.
-
-Use esta pasta para funcoes puras e independentes de React, como:
-
-- formatacao de datas, numeros e textos;
-- validacoes;
-- manipulacao de strings;
-- conversoes;
-- helpers pequenos e testaveis.
-
-Evite colocar regras de negocio extensas em `utils`. Se a funcao depender de contexto de dominio, ela provavelmente pertence a um service, hook ou modulo especifico da aplicacao final.
-
-O arquivo `src/utils/validacoes.ts` centraliza validacoes e normalizacoes comuns:
-
-- `validarStringComConteudo`: use para confirmar que um valor desconhecido e uma string preenchida antes de aplicar `trim()`, `toLowerCase()` ou salvar dados obrigatorios.
-- `validarEmail`: use para validar o formato basico de e-mails em login, cadastro e recuperacao de senha.
-- `normalizarCampoOpcional`: use para campos opcionais que devem virar `null` quando nao preenchidos, como telefone, documento, complemento ou observacao.
-
-Antes de criar uma nova validacao, verifique se ela pertence a esse arquivo ou se e uma regra especifica do modulo.
-
-## Paginas e layout
+## Páginas E Layout
 
 - Rotas ficam em `src/app`.
-- `src/app/layout.tsx` deve manter configuracoes globais e estrutura comum.
+- `src/app/layout.tsx` deve manter configurações globais.
+- `src/app/(app)/layout.tsx` deve manter a estrutura comum da área autenticada.
 - Estilos globais ficam em `src/app/cssGlobal.css`.
-- Evite transformar `page.tsx` em catalogo permanente de exemplos. Exemplos podem existir temporariamente, mas o template deve iniciar limpo e facil de adaptar.
-- Telas que usarem `TabelaDados` devem seguir o padrao de montagem de `src/app/(app)/usuarios/page.tsx`: cabecalho simples com titulo, descricao e acao principal com `Botao`; carregamento via `requisitarAPI`; erros exibidos com `ModalResposta`; e tabela renderizada pelo componente `TabelaDados`.
+- Evite transformar `page.tsx` em catálogo permanente de exemplos.
+- Telas que usarem `TabelaDados` devem seguir o padrão de `src/app/(app)/usuarios/page.tsx` e `src/app/(app)/empresas/page.tsx`: cabeçalho simples, ação principal com `Botao`, carregamento via `requisitarAPI`, erros com `ModalResposta` e tabela renderizada por `TabelaDados`.
 
-## Estilo e TypeScript
+Rotas internas atuais:
 
-- Mantenha `strict` sem relaxar configuracoes do TypeScript.
-- Prefira tipos e interfaces explicitos para props.
-- Evite `any`; use tipos especificos ou generics quando necessario.
-- Nao adicione bibliotecas novas sem necessidade clara para o template.
-- Preserve o padrao visual Bootstrap ja adotado.
-- Mantenha portugues correto em textos visiveis, mensagens de API, placeholders, metadados e comentarios. Use acentos e grafia correta, por exemplo: `aplicação`, `usuário`, `não`, `possível`, `requisição`, `sessão`.
-- Comentarios devem explicar decisoes ou trechos nao obvios, nao repetir o que o codigo ja diz.
-- Funcoes e componentes devem possuir comentarios explicando seu uso e sua utilidade no template. Prefira comentarios curtos em formato JSDoc acima da funcao ou componente.
-- Nomes de funcoes devem ser escritos em portugues e deixar claro o que a funcao faz. Evite nomes genericos como `handle`, `process`, `execute` ou abreviacoes sem contexto.
+- `/menuPrincipal`: primeira tela autenticada.
+- `/usuarios`: listagem e cadastro de usuários.
+- `/usuarios/perfil`: listagem e cadastro de perfis.
+- `/empresas`: listagem e cadastro de empresas.
+- `/configuracoes`: configurações gerais e SMTP.
+- `/minhaConta`: dados do usuário autenticado.
 
-## Padrao de cores
+## Banco E Migrations
 
-Use a paleta da sidebar como referencia visual da aplicacao:
+As migrations ficam em `database/migrations` e devem ser executadas em ordem crescente. Atualize `database/migrations/README.md` sempre que criar, remover ou alterar tabelas, colunas, índices ou relacionamentos.
 
-- Fundo principal da aplicacao: `#f4f7fb`.
-- Superficies claras, cards e formularios: `#ffffff`.
+Tabelas atuais:
+
+- `usuarios`;
+- `configuracao`;
+- `perfil`;
+- `empresas`;
+- `usuarios_empresas`.
+
+Ao criar migrations, prefira scripts idempotentes quando fizer sentido (`if not exists`) e mantenha nomes com prefixo numérico.
+
+## Estilo E TypeScript
+
+- Mantenha `strict` sem relaxar configurações do TypeScript.
+- Prefira tipos e interfaces explícitos para props.
+- Evite `any`; use tipos específicos, `unknown` com validação ou generics quando necessário.
+- Não adicione bibliotecas novas sem necessidade clara para o template.
+- Preserve o padrão visual atual.
+- Mantenha português correto em textos visíveis, mensagens de API, placeholders, metadados e comentários.
+- Comentários devem explicar decisões ou trechos não óbvios, não repetir o que o código já diz.
+- Funções e componentes devem possuir comentários explicando seu uso e sua utilidade no template. Prefira comentários curtos em formato JSDoc acima da função ou componente.
+- Nomes de funções devem ser escritos em português e deixar claro o que a função faz. Evite nomes genéricos como `handle`, `process`, `execute` ou abreviações sem contexto.
+
+## Padrão De Cores
+
+Use a paleta da sidebar como referência visual da aplicação:
+
+- Fundo principal da aplicação: `#f4f7fb`.
+- Superfícies claras, cards e formulários: `#ffffff`.
 - Bordas claras: `#dce3ec`.
 - Texto principal em telas claras: `#172033` ou `#273142`.
-- Texto secundario: `#6c757d`.
-- Sidebar e areas de navegacao internas: `#111827`.
+- Texto secundário: `#6c757d`.
+- Sidebar e áreas de navegação internas: `#111827`.
 - Texto principal sobre fundo escuro: `#e5edf8`.
-- Texto secundario sobre fundo escuro: `#94a3b8`.
-- Destaque/acao primaria: `#0d6efd`.
-- Destaque de icones na sidebar: `#60a5fa`.
-- Hover/ativo em navegacao escura: `rgba(255, 255, 255, 0.09)`.
-- Divisorias em navegacao escura: `rgba(255, 255, 255, 0.08)` ou `rgba(255, 255, 255, 0.1)`.
+- Texto secundário sobre fundo escuro: `#94a3b8`.
+- Destaque/ação primária: `#0d6efd`.
+- Destaque de ícones na sidebar: `#60a5fa`.
+- Hover/ativo em navegação escura: `rgba(255, 255, 255, 0.09)`.
+- Divisórias em navegação escura: `rgba(255, 255, 255, 0.08)` ou `rgba(255, 255, 255, 0.1)`.
 
-Ao criar novas telas internas, mantenha fundos claros com conteudo em cards brancos e use a sidebar escura como ancora visual. Evite criar uma nova paleta dominante sem necessidade.
+Ao criar novas telas internas, mantenha fundos claros com conteúdo em cards brancos e use a sidebar escura como âncora visual. Evite criar uma nova paleta dominante sem necessidade.
 
-## Criterios para aceitar mudancas no template
+## Critérios Para Aceitar Mudanças No Template
 
-Uma mudanca e adequada para este repositorio quando:
+Uma mudança é adequada para este repositório quando:
 
-- ajuda novos projetos a comecarem mais rapido;
-- reduz repeticao comum entre aplicacoes;
-- melhora a organizacao base;
-- permanece generica o suficiente para varios dominios;
-- nao obriga uma aplicacao final a seguir uma regra de negocio especifica.
+- ajuda novos projetos a começarem mais rápido;
+- reduz repetição comum entre aplicações;
+- melhora a organização base;
+- permanece genérica o suficiente para vários domínios;
+- não obriga uma aplicação final a seguir uma regra de negócio específica.
 
-Uma mudanca provavelmente nao pertence ao template quando:
+Uma mudança provavelmente não pertence ao template quando:
 
-- depende de um cliente, produto ou dominio especifico;
-- adiciona fluxo de negocio fechado;
-- adiciona dependencia pesada sem uso amplo;
-- torna a base mais dificil de remover ou adaptar.
+- depende de um cliente, produto ou domínio específico;
+- adiciona fluxo de negócio fechado;
+- adiciona dependência pesada sem uso amplo;
+- torna a base mais difícil de remover ou adaptar.
 
-## Cuidados ao editar
+## Cuidados Ao Editar
 
-- Nao reverta alteracoes existentes sem pedido explicito.
-- Leia os arquivos ao redor antes de mudar padroes.
-- Mantenha alteracoes pequenas e coesas.
+- Não reverta alterações existentes sem pedido explícito.
+- Leia os arquivos ao redor antes de mudar padrões.
+- Mantenha alterações pequenas e coesas.
 - Atualize este arquivo quando a arquitetura base mudar.
-- Se criar componentes, hooks, services ou utils reutilizaveis, considere atualizar o `README.md` com exemplos de uso.
+- Se criar componentes, hooks, services ou utils reutilizáveis, considere atualizar o `README.md` com exemplos de uso.

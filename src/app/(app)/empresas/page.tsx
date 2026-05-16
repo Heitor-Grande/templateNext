@@ -6,88 +6,88 @@ import { ColunaTabelaDados, TabelaDados } from "@/components/tables/dataTable";
 import { requisitarAPI } from "@/utils/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
-import ModalCadastroUsuario from "./components/modalCadastroUsuario";
+import ModalCadastroEmpresa from "./components/modalCadastroEmpresa";
 
-type UsuarioTabela = {
+type EmpresaTabela = {
+    [key: string]: unknown;
     id: number;
-    nome: string;
-    email: string;
+    fantasia: string;
+    cnpj: string;
+    email: string | null;
     telefone: string | null;
-    documento: string | null;
-    perfil_nome: string | null;
     ativo: boolean;
     criado_em: string;
+    atualizado_em: string;
 };
 
-const CHAVE_EMPRESA_NAVEGACAO = "empresaNavegacaoId";
+function formatarCnpj(valor: string): string {
+    const digitos = valor.replace(/\D/g, "").slice(0, 14);
+
+    return digitos
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1/$2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
+}
 
 /**
- * Página de listagem de usuários.
+ * Página de listagem de empresas.
  * Use como referência para telas de cadastro que precisam consumir API e renderizar a TabelaDados.
  */
-export default function PaginaUsuarios() {
-    const [usuarios, setUsuarios] = useState<UsuarioTabela[]>([]);
+export default function PaginaEmpresas() {
+    const [empresas, setEmpresas] = useState<EmpresaTabela[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
-    const [idUsuarioSelecionado, setIdUsuarioSelecionado] = useState<number | null>(null);
+    const [idEmpresaSelecionada, setIdEmpresaSelecionada] = useState<number | null>(null);
 
-    const colunas: ColunaTabelaDados<UsuarioTabela>[] = [
-        { chave: "nome", titulo: "Nome" },
-        { chave: "email", titulo: "E-mail" },
+    const colunas: ColunaTabelaDados<EmpresaTabela>[] = [
+        { chave: "fantasia", titulo: "Nome" },
+        {
+            chave: "cnpj",
+            titulo: "CNPJ",
+            renderizar: (empresa) => formatarCnpj(empresa.cnpj),
+        },
+        {
+            chave: "email",
+            titulo: "E-mail",
+            renderizar: (empresa) => empresa.email || "-",
+        },
         {
             chave: "telefone",
             titulo: "Telefone",
-            renderizar: (usuario) => usuario.telefone || "-",
-        },
-        {
-            chave: "documento",
-            titulo: "Documento",
-            renderizar: (usuario) => usuario.documento || "-",
-        },
-        {
-            chave: "perfil_nome",
-            titulo: "Perfil",
-            renderizar: (usuario) => usuario.perfil_nome || "-",
+            renderizar: (empresa) => empresa.telefone || "-",
         },
         {
             chave: "ativo",
             titulo: "Status",
-            renderizar: (usuario) => (
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${usuario.ativo ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}`}>
-                    {usuario.ativo ? "Ativo" : "Inativo"}
+            renderizar: (empresa) => (
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${empresa.ativo ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}`}>
+                    {empresa.ativo ? "Ativa" : "Inativa"}
                 </span>
             ),
         },
     ];
 
     /**
-     * Carrega os usuários cadastrados na API.
+     * Carrega as empresas cadastradas na API.
      * Use ao abrir a tela e sempre que a listagem precisar ser atualizada.
      */
-    const carregarUsuariosCadastrados = useCallback(async () => {
+    const carregarEmpresasCadastradas = useCallback(async () => {
         setCarregando(true);
         setMensagemResposta("");
 
         try {
-            const empresaNavegacaoId = localStorage.getItem(CHAVE_EMPRESA_NAVEGACAO);
-
-            if (!empresaNavegacaoId) {
-                setUsuarios([]);
-                setMensagemResposta("Selecione uma empresa de navegação.");
-                return;
-            }
-
-            const resposta = await requisitarAPI(`/api/usuarios?empresaNavegacaoId=${empresaNavegacaoId}`, {
+            const resposta = await requisitarAPI("/api/empresas", {
                 method: "GET",
             });
 
-            setUsuarios(Array.isArray(resposta.dados) ? resposta.dados : []);
+            setEmpresas(Array.isArray(resposta.dados) ? resposta.dados as EmpresaTabela[] : []);
             setMensagemResposta("");
         } catch (erro) {
             const mensagemErro = erro instanceof Error
                 ? erro.message
-                : "Não foi possível carregar os usuários.";
+                : "Não foi possível carregar as empresas.";
 
             setMensagemResposta(mensagemErro);
         } finally {
@@ -97,24 +97,24 @@ export default function PaginaUsuarios() {
 
     useEffect(() => {
         const carregamentoInicial = window.setTimeout(() => {
-            void carregarUsuariosCadastrados();
+            void carregarEmpresasCadastradas();
         }, 0);
 
         return () => window.clearTimeout(carregamentoInicial);
-    }, [carregarUsuariosCadastrados]);
+    }, [carregarEmpresasCadastradas]);
 
     /**
-     * Abre o modal com os dados do usuário selecionado na tabela.
+     * Abre o modal com os dados da empresa selecionada na tabela.
      */
-    function abrirCadastroUsuarioSelecionado(idUsuario: string | number | null) {
-        const idNormalizado = Number(idUsuario);
+    function abrirCadastroEmpresaSelecionada(idEmpresa: string | number | null) {
+        const idNormalizado = Number(idEmpresa);
 
         if (!Number.isInteger(idNormalizado) || idNormalizado <= 0) {
-            setMensagemResposta("Não foi possível identificar o usuário selecionado.");
+            setMensagemResposta("Não foi possível identificar a empresa selecionada.");
             return;
         }
 
-        setIdUsuarioSelecionado(idNormalizado);
+        setIdEmpresaSelecionada(idNormalizado);
         setModalCadastroAberto(true);
     }
 
@@ -123,23 +123,23 @@ export default function PaginaUsuarios() {
             <div className="mb-6">
                 <div className="w-full rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
                     <div className="p-6">
-                        <h5 className="text-lg font-bold text-slate-900">Usuários</h5>
+                        <h5 className="text-lg font-bold text-slate-900">Empresas</h5>
                         <hr className="my-4 border-slate-200" />
 
                         <div className="w-full">
                             <div className="grid gap-4 md:grid-cols-12 md:items-center">
                                 <div className="md:col-span-8 lg:col-span-10">
                                     <p className="mb-0 text-slate-500">
-                                        Consulte os usuários cadastrados na aplicação.
+                                        Consulte as empresas cadastradas na aplicação.
                                     </p>
                                 </div>
                                 <div className="md:col-span-4 lg:col-span-2">
                                     <Botao
                                         size="sm"
-                                        label="Novo usuário"
+                                        label="Nova empresa"
                                         icon={<FaPlus size={14} />}
                                         onClick={() => {
-                                            setIdUsuarioSelecionado(null);
+                                            setIdEmpresaSelecionada(null);
                                             setModalCadastroAberto(true);
                                         }}
                                         disabled={carregando}
@@ -157,23 +157,24 @@ export default function PaginaUsuarios() {
 
             <TabelaDados
                 colunas={colunas}
-                dados={usuarios}
+                dados={empresas}
                 carregando={carregando}
-                mensagemSemDados="Nenhum usuário cadastrado."
-                placeholderFiltro="Procurar por usuário"
+                mensagemSemDados="Nenhuma empresa cadastrada."
+                placeholderFiltro="Procurar por empresa"
                 usaExcel={true}
                 usaClickLinha={true}
-                aoClicarLinha={abrirCadastroUsuarioSelecionado}
+                aoClicarLinha={abrirCadastroEmpresaSelecionada}
+                nomeArquivoExcel="empresas"
             />
 
             {modalCadastroAberto && (
-                <ModalCadastroUsuario
+                <ModalCadastroEmpresa
                     aberto={modalCadastroAberto}
-                    idUsuario={idUsuarioSelecionado}
+                    idEmpresa={idEmpresaSelecionada}
                     aoFechar={() => {
                         setModalCadastroAberto(false);
-                        setIdUsuarioSelecionado(null);
-                        void carregarUsuariosCadastrados();
+                        setIdEmpresaSelecionada(null);
+                        void carregarEmpresasCadastradas();
                     }}
                 />
             )}

@@ -14,6 +14,7 @@ type ButtonProps = {
     type: "button" | "submit" | "reset";
     className: string;
     ariaLabel?: string;
+    form?: string;
 };
 
 /**
@@ -32,6 +33,7 @@ export function Botao({
     type,
     className,
     ariaLabel,
+    form,
 }: ButtonProps) {
     const classesPorTamanho = {
         sm: "min-h-9 px-3 py-2 text-sm",
@@ -66,6 +68,7 @@ export function Botao({
             type={type}
             className={classesBase}
             aria-label={ariaLabel}
+            form={form}
         >
             <span className="inline-flex w-full items-center justify-center gap-2">
                 {icon && <span className="inline-flex items-center">{icon}</span>}

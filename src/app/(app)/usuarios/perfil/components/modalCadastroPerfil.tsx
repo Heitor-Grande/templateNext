@@ -10,7 +10,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { FaExclamationTriangle, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 
-export type RecursoPermissaoPerfil = "dashboard" | "usuario" | "configuracao" | "perfil";
+export type RecursoPermissaoPerfil = "dashboard" | "usuario" | "empresa" | "configuracao" | "perfil";
 
 export type PermissaoPerfil = {
     criar: boolean;
@@ -44,6 +44,7 @@ interface ModalCadastroPerfilProps {
 const recursosPermissao: Array<{ chave: RecursoPermissaoPerfil; titulo: string }> = [
     { chave: "dashboard", titulo: "Dashboard" },
     { chave: "usuario", titulo: "Usuário" },
+    { chave: "empresa", titulo: "Empresa" },
     { chave: "configuracao", titulo: "Configuração" },
     { chave: "perfil", titulo: "Perfil" },
 ];
@@ -63,6 +64,12 @@ const permissoesIniciais: Record<RecursoPermissaoPerfil, PermissaoPerfil> = {
         visualizar: false,
     },
     usuario: {
+        criar: false,
+        deletar: false,
+        atualizar: false,
+        visualizar: false,
+    },
+    empresa: {
         criar: false,
         deletar: false,
         atualizar: false,
@@ -98,6 +105,7 @@ function clonarPermissoes(permissoes: Record<RecursoPermissaoPerfil, PermissaoPe
     return {
         dashboard: { ...permissoes.dashboard },
         usuario: { ...permissoes.usuario },
+        empresa: { ...permissoes.empresa },
         configuracao: { ...permissoes.configuracao },
         perfil: { ...permissoes.perfil },
     };
@@ -114,6 +122,10 @@ function normalizarPermissoesPerfil(permissoes: Partial<Record<RecursoPermissaoP
         usuario: {
             ...permissoesIniciais.usuario,
             ...permissoes.usuario,
+        },
+        empresa: {
+            ...permissoesIniciais.empresa,
+            ...permissoes.empresa,
         },
         configuracao: {
             ...permissoesIniciais.configuracao,
@@ -296,6 +308,10 @@ export default function ModalCadastroPerfil({
     }
 
     function fecharModalCadastroPerfil() {
+        aoFechar();
+    }
+
+    function limparEstadoModalCadastroPerfil() {
         setFormulario({
             ...estadoInicialPerfil,
             permissoes: clonarPermissoes(permissoesIniciais),
@@ -303,7 +319,6 @@ export default function ModalCadastroPerfil({
         setMensagemResposta("");
         setCarregando(false);
         setModalConfirmacaoExclusaoAberto(false);
-        aoFechar();
     }
 
     useEffect(() => {
@@ -328,7 +343,13 @@ export default function ModalCadastroPerfil({
 
     return (
         <>
-            <Modal show={aberto} onHide={fecharModalCadastroPerfil} centered size="lg">
+            <Modal
+                show={aberto}
+                onHide={fecharModalCadastroPerfil}
+                onExited={limparEstadoModalCadastroPerfil}
+                centered
+                size="lg"
+            >
                 <Modal.Header closeButton>
                     <Modal.Title className="text-lg font-bold">
                         {estaEditandoPerfil ? "Perfil" : "Novo perfil"}
@@ -398,7 +419,7 @@ export default function ModalCadastroPerfil({
                                         <tbody>
                                             {recursosPermissao.map((recurso) => (
                                                 <tr key={recurso.chave}>
-                                                    <td className="border-t border-slate-100 px-3 py-3 font-semibold text-slate-800">{recurso.titulo}</td>
+                                                    <td className="border-t border-slate-100 px-3 py-3 font-semibold text-slate-800">{recurso.titulo == "Perfil" || recurso.titulo == "Configuração" || recurso.titulo == "Usuário" || recurso.titulo == "Empresa" ? recurso.titulo + " (adm)" : recurso.titulo + " (public)"}</td>
                                                     {acoesPermissao.map((acao) => (
                                                         <td key={`${recurso.chave}-${acao.chave}`} className="border-t border-slate-100 px-3 py-3 text-center">
                                                             <input
@@ -468,7 +489,7 @@ export default function ModalCadastroPerfil({
             </Modal>
 
             <ModalConfirmacao
-                isOpen={modalConfirmacaoExclusaoAberto}
+                isOpen={aberto && modalConfirmacaoExclusaoAberto}
                 message="Deseja realmente excluir este perfil?"
                 icon={<FaExclamationTriangle className="text-4xl text-red-600" />}
                 onConfirm={deletarPerfil}
@@ -478,12 +499,12 @@ export default function ModalCadastroPerfil({
             />
 
             <ModalCarregamento
-                show={carregando}
+                show={aberto && carregando}
                 text={textoCarregamento}
             />
 
             <ModalResposta
-                isOpen={Boolean(mensagemResposta)}
+                isOpen={aberto && Boolean(mensagemResposta)}
                 message={mensagemResposta}
                 onClose={() => setMensagemResposta("")}
             />

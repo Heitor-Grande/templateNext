@@ -57,7 +57,7 @@ function montarHtmlRecuperacaoSenha(codigo: string): string {
             <div style="max-width:520px;margin:0 auto;background-color:#ffffff;border:1px solid #dce3ec;border-radius:8px;overflow:hidden;">
                 <div style="padding:24px;background-color:#111827;color:#e5edf8;">
                     <h1 style="margin:0;font-size:22px;line-height:1.3;">Recuperação de senha</h1>
-                    <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Template App</p>
+                    <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">GSD Desk</p>
                 </div>
 
                 <div style="padding:28px 24px;">

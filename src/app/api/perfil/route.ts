@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
+import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { verificarPermissaoAPI } from "@/utils/permissoes";
 import { criarRespostaApi } from "@/utils/respostaApi";
+import { verificarUsuarioAdministrador } from "@/utils/usuarioAdmin";
 import { normalizarCampoOpcional, validarStringComConteudo } from "@/utils/validacoes";
 
-type RecursoPermissaoPerfil = "dashboard" | "usuario" | "configuracao" | "perfil";
+type RecursoPermissaoPerfil = "dashboard" | "usuario" | "empresa" | "configuracao" | "perfil";
 
 type PermissaoPerfil = {
     criar: boolean;
@@ -39,7 +41,7 @@ type AtualizacaoPerfilBody = CadastroPerfilBody & {
     ativo?: unknown;
 };
 
-const recursosPermissao: RecursoPermissaoPerfil[] = ["dashboard", "usuario", "configuracao", "perfil"];
+const recursosPermissao: RecursoPermissaoPerfil[] = ["dashboard", "usuario", "empresa", "configuracao", "perfil"];
 const acoesPermissao: Array<keyof PermissaoPerfil> = ["criar", "deletar", "atualizar", "visualizar"];
 
 /**
@@ -80,6 +82,12 @@ export async function GET(request: NextRequest) {
 
         if (respostaPermissao) {
             return respostaPermissao;
+        }
+
+        const idUsuario = obterIdUsuarioAutenticado(request);
+
+        if (!idUsuario) {
+            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
         }
 
         const id = Number(request.nextUrl.searchParams.get("id"));
@@ -147,6 +155,18 @@ export async function POST(request: NextRequest) {
             return respostaPermissao;
         }
 
+        const idUsuario = obterIdUsuarioAutenticado(request);
+
+        if (!idUsuario) {
+            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
+        }
+
+        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
+
+        if (!usuarioAdministrador) {
+            return criarRespostaApi(false, "Apenas usuários administradores podem criar perfis.", null, 403);
+        }
+
         const body = await request.json() as CadastroPerfilBody;
 
         const nome = validarStringComConteudo(body.nome) ? body.nome.trim() : "";
@@ -204,6 +224,18 @@ export async function PUT(request: NextRequest) {
 
         if (respostaPermissao) {
             return respostaPermissao;
+        }
+
+        const idUsuario = obterIdUsuarioAutenticado(request);
+
+        if (!idUsuario) {
+            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
+        }
+
+        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
+
+        if (!usuarioAdministrador) {
+            return criarRespostaApi(false, "Apenas usuários administradores podem atualizar perfis.", null, 403);
         }
 
         const body = await request.json() as AtualizacaoPerfilBody;
@@ -278,6 +310,18 @@ export async function DELETE(request: NextRequest) {
 
         if (respostaPermissao) {
             return respostaPermissao;
+        }
+
+        const idUsuario = obterIdUsuarioAutenticado(request);
+
+        if (!idUsuario) {
+            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
+        }
+
+        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
+
+        if (!usuarioAdministrador) {
+            return criarRespostaApi(false, "Apenas usuários administradores podem excluir perfis.", null, 403);
         }
 
         const id = Number(request.nextUrl.searchParams.get("id"));

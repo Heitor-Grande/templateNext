@@ -3,6 +3,7 @@
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
 import { Seletor } from "@/components/inputs/select";
+import VinculoUsuarioEmpresa from "@/components/VinculoUsuarioEmpresa";
 import ModalConfirmacao from "@/components/modals/confirmModal";
 import { ModalCarregamento } from "@/components/modals/loading";
 import ModalResposta from "@/components/modals/responseModal";
@@ -57,6 +58,8 @@ interface ModalCadastroUsuarioProps {
     aoFechar: () => void;
 }
 
+const CHAVE_EMPRESA_NAVEGACAO = "empresaNavegacaoId";
+
 const estadoInicialFormulario: DadosCadastroUsuario = {
     id: null,
     nome: "",
@@ -109,6 +112,10 @@ function mapearUsuarioParaFormulario(usuario: UsuarioDetalhadoApi): DadosCadastr
  * Modal local de cadastro e visualização de usuário.
  * Use no fluxo de usuários para cadastrar novos registros, editar dados e vincular um perfil.
  */
+function obterEmpresaNavegacaoSelecionada(): string | null {
+    return localStorage.getItem(CHAVE_EMPRESA_NAVEGACAO);
+}
+
 export default function ModalCadastroUsuario({
     aberto,
     idUsuario,
@@ -165,7 +172,14 @@ export default function ModalCadastroUsuario({
         setMensagemResposta("");
 
         try {
-            const resposta = await requisitarAPI(`/api/usuarios?id=${idUsuario}`, {
+            const empresaNavegacaoId = obterEmpresaNavegacaoSelecionada();
+
+            if (!empresaNavegacaoId) {
+                setMensagemResposta("Selecione uma empresa de navegação.");
+                return;
+            }
+
+            const resposta = await requisitarAPI(`/api/usuarios?id=${idUsuario}&empresaNavegacaoId=${empresaNavegacaoId}`, {
                 method: "GET",
             });
 
@@ -204,10 +218,18 @@ export default function ModalCadastroUsuario({
         setTextoCarregamento(estaVisualizandoUsuario ? "Atualizando usuário..." : "Cadastrando usuário...");
 
         try {
+            const empresaNavegacaoId = obterEmpresaNavegacaoSelecionada();
+
+            if (!empresaNavegacaoId) {
+                setMensagemResposta("Selecione uma empresa de navegação.");
+                return;
+            }
+
             const resposta = await requisitarAPI("/api/usuarios", {
                 method: estaVisualizandoUsuario ? "PUT" : "POST",
                 body: {
                     id: formulario.id,
+                    empresaNavegacaoId,
                     nome: formulario.nome,
                     email: formulario.email,
                     telefone: formulario.telefone,
@@ -279,11 +301,14 @@ export default function ModalCadastroUsuario({
      * Fecha o modal e limpa o formulário para uma nova inclusão.
      */
     function fecharModalCadastroUsuario() {
+        aoFechar();
+    }
+
+    function limparEstadoModalCadastroUsuario() {
         setFormulario(estadoInicialFormulario);
         setMensagemResposta("");
         setCarregando(false);
         setModalConfirmacaoExclusaoAberto(false);
-        aoFechar();
     }
 
     useEffect(() => {
@@ -307,7 +332,13 @@ export default function ModalCadastroUsuario({
 
     return (
         <>
-            <Modal show={aberto} onHide={fecharModalCadastroUsuario} centered size="lg">
+            <Modal
+                show={aberto}
+                onHide={fecharModalCadastroUsuario}
+                onExited={limparEstadoModalCadastroUsuario}
+                centered
+                size="lg"
+            >
                 <Modal.Header closeButton>
                     <Modal.Title className="text-lg font-bold">
                         {estaVisualizandoUsuario ? "Usuário" : "Novo usuário"}
@@ -476,6 +507,16 @@ export default function ModalCadastroUsuario({
                                     className="mb-0"
                                 />
                             </div>
+
+                            {estaVisualizandoUsuario && (
+                                <div className="md:col-span-12">
+                                    <VinculoUsuarioEmpresa
+                                        form="usuario"
+                                        idUsuario={idUsuario}
+                                        nomeContexto={formulario.nome}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </Modal.Body>
 
@@ -522,7 +563,7 @@ export default function ModalCadastroUsuario({
             </Modal>
 
             <ModalConfirmacao
-                isOpen={modalConfirmacaoExclusaoAberto}
+                isOpen={aberto && modalConfirmacaoExclusaoAberto}
                 message="Deseja realmente excluir este usuário?"
                 icon={<FaExclamationTriangle className="text-4xl text-red-600" />}
                 onConfirm={deletarUsuario}
@@ -532,12 +573,12 @@ export default function ModalCadastroUsuario({
             />
 
             <ModalCarregamento
-                show={carregando}
+                show={aberto && carregando}
                 text={textoCarregamento}
             />
 
             <ModalResposta
-                isOpen={Boolean(mensagemResposta)}
+                isOpen={aberto && Boolean(mensagemResposta)}
                 message={mensagemResposta}
                 onClose={() => setMensagemResposta("")}
             />
