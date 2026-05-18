@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { consultarBancoDados } from "@/services/database";
+import { enviarEmail } from "@/services/email";
 import { normalizarCampoOpcional, validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 import { criarHash } from "@/utils/criptografia";
 import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
@@ -52,6 +53,103 @@ function normalizarPerfilId(valor: unknown): number | null {
 
 function normalizarIdEmpresaNavegacao(valor: unknown): number {
     return Number(valor);
+}
+
+/**
+ * Escapa textos dinâmicos usados em HTML de e-mails transacionais.
+ * Use antes de interpolar dados de usuário em templates de e-mail.
+ */
+function escaparHtml(valor: string): string {
+    return valor
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+/**
+ * Monta o HTML do e-mail enviado somente após a criação de um novo usuário.
+ * Use para entregar as credenciais iniciais e o link de acesso ao template.
+ */
+function montarHtmlBoasVindasUsuario({
+    nome,
+    email,
+    senha,
+    linkAplicacao,
+}: {
+    nome: string;
+    email: string;
+    senha: string;
+    linkAplicacao: string;
+}): string {
+    const nomeSeguro = escaparHtml(nome);
+    const emailSeguro = escaparHtml(email);
+    const senhaSegura = escaparHtml(senha);
+    const linkSeguro = escaparHtml(linkAplicacao);
+
+    return `
+        <div style="margin:0;padding:32px;background-color:#f4f7fb;font-family:Arial,sans-serif;color:#273142;">
+            <div style="max-width:560px;margin:0 auto;background-color:#ffffff;border:1px solid #dce3ec;border-radius:8px;overflow:hidden;">
+                <div style="padding:24px;background-color:#111827;color:#e5edf8;">
+                    <h1 style="margin:0;font-size:22px;line-height:1.3;">Bem-vindo ao Template Next.js</h1>
+                    <p style="margin:8px 0 0;color:#94a3b8;font-size:14px;">Sua conta foi criada com sucesso.</p>
+                </div>
+
+                <div style="padding:28px 24px;">
+                    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">
+                        Olá, ${nomeSeguro}. Seja bem-vindo.
+                    </p>
+
+                    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#6c757d;">
+                        Esta aplicação template oferece uma base administrativa reutilizável com login, permissões, empresas, usuários, configurações e componentes prontos para evoluir novos projetos.
+                    </p>
+
+                    <div style="margin:0 0 22px;padding:18px;border:1px solid #dce3ec;border-radius:8px;background-color:#f8fafc;">
+                        <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>E-mail:</strong> ${emailSeguro}</p>
+                        <p style="margin:0;font-size:14px;line-height:1.5;"><strong>Senha:</strong> ${senhaSegura}</p>
+                    </div>
+
+                    <p style="margin:0 0 18px;font-size:15px;line-height:1.5;color:#6c757d;">
+                        Acesse a aplicação pelo link abaixo:
+                    </p>
+
+                    <p style="margin:0 0 22px;">
+                        <a href="${linkSeguro}" style="display:inline-block;padding:12px 18px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
+                            Acessar aplicação
+                        </a>
+                    </p>
+
+                    <p style="margin:0;color:#6c757d;font-size:13px;line-height:1.5;">
+                        Recomendamos alterar a senha no primeiro acesso.
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Tenta enviar o e-mail de boas-vindas sem desfazer o usuário já cadastrado.
+ * Use depois que a criação e o vínculo inicial forem persistidos com sucesso.
+ */
+async function enviarEmailBoasVindasUsuario(dadosEmail: {
+    nome: string;
+    email: string;
+    senha: string;
+    linkAplicacao: string;
+}): Promise<boolean> {
+    try {
+        await enviarEmail({
+            to: dadosEmail.email,
+            subject: "Bem-vindo ao Template Next.js",
+            html: montarHtmlBoasVindasUsuario(dadosEmail),
+        });
+
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -244,6 +342,17 @@ export async function POST(request: NextRequest) {
             `,
             [resultadoUsuario.rows[0].id, empresaNavegacaoId, idUsuarioCriador]
         );
+
+        const emailEnviado = await enviarEmailBoasVindasUsuario({
+            nome: nome,
+            email: email,
+            senha: senha,
+            linkAplicacao: request.nextUrl.origin,
+        });
+
+        if (!emailEnviado) {
+            return criarRespostaApi(true, "Usuário cadastrado com sucesso, mas não foi possível enviar o e-mail de acesso.", null, 201);
+        }
 
         return criarRespostaApi(true, "Usuário cadastrado com sucesso.", null, 201);
     } catch (erro) {
