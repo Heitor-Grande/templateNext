@@ -60,6 +60,8 @@ function obterCodigoErroBanco(erro: unknown): string | null {
     return erro instanceof Error && "code" in erro && typeof erro.code === "string" ? erro.code : null;
 }
 
+const recursoPermissaoVinculoUsuarioEmpresa = "vinculoUsuarioEmpresa";
+
 /**
  * Endpoint GET de vínculos entre usuários e empresas.
  * Use para listar vínculos ou opções disponíveis a partir de um usuário ou de uma empresa.
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     try {
         const respostaPermissao = await verificarPermissaoAPI({
             request: request,
-            recurso: "usuario",
+            recurso: recursoPermissaoVinculoUsuarioEmpresa,
             acao: "visualizar",
         });
 
@@ -221,7 +223,7 @@ export async function POST(request: NextRequest) {
     try {
         const respostaPermissao = await verificarPermissaoAPI({
             request: request,
-            recurso: "usuario",
+            recurso: recursoPermissaoVinculoUsuarioEmpresa,
             acao: "criar",
         });
 
@@ -337,7 +339,7 @@ export async function PATCH(request: NextRequest) {
     try {
         const respostaPermissao = await verificarPermissaoAPI({
             request: request,
-            recurso: "usuario",
+            recurso: recursoPermissaoVinculoUsuarioEmpresa,
             acao: "atualizar",
         });
 
@@ -430,7 +432,7 @@ export async function DELETE(request: NextRequest) {
     try {
         const respostaPermissao = await verificarPermissaoAPI({
             request: request,
-            recurso: "usuario",
+            recurso: recursoPermissaoVinculoUsuarioEmpresa,
             acao: "deletar",
         });
 
