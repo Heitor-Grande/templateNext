@@ -10,7 +10,7 @@ import ModalResposta from "@/components/modals/responseModal";
 import { requisitarAPI } from "@/utils/api";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
-import { FaExclamationTriangle, FaSave, FaTimes, FaTrash } from "react-icons/fa";
+import { FaBuilding, FaExclamationTriangle, FaSave, FaTimes, FaTrash, FaUser } from "react-icons/fa";
 
 type OpcaoPerfil = {
     label: string;
@@ -57,6 +57,8 @@ interface ModalCadastroUsuarioProps {
     idUsuario?: number | null;
     aoFechar: () => void;
 }
+
+type AbaCadastroUsuario = "dados" | "empresas";
 
 const CHAVE_EMPRESA_NAVEGACAO = "empresaNavegacaoId";
 
@@ -127,6 +129,7 @@ export default function ModalCadastroUsuario({
     const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalConfirmacaoExclusaoAberto, setModalConfirmacaoExclusaoAberto] = useState(false);
+    const [abaAtiva, setAbaAtiva] = useState<AbaCadastroUsuario>("dados");
 
     const estaVisualizandoUsuario = typeof idUsuario === "number" && idUsuario > 0;
 
@@ -308,6 +311,7 @@ export default function ModalCadastroUsuario({
         setMensagemResposta("");
         setCarregando(false);
         setModalConfirmacaoExclusaoAberto(false);
+        setAbaAtiva("dados");
     }
 
     useEffect(() => {
@@ -346,7 +350,28 @@ export default function ModalCadastroUsuario({
 
                 <form onSubmit={cadastrarUsuario}>
                     <Modal.Body>
-                        <div className="grid gap-4 md:grid-cols-12">
+                        <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+                            <button
+                                type="button"
+                                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition ${abaAtiva === "dados" ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50"}`}
+                                onClick={() => setAbaAtiva("dados")}
+                            >
+                                <FaUser size={14} />
+                                Dados
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition ${abaAtiva === "empresas" ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50"}`}
+                                onClick={() => setAbaAtiva("empresas")}
+                            >
+                                <FaBuilding size={14} />
+                                Empresas
+                            </button>
+                        </div>
+
+                        {abaAtiva === "dados" && (
+                            <div className="grid gap-4 md:grid-cols-12">
                             <div className="md:col-span-6">
                                 <CampoTexto
                                     id="usuario-nome"
@@ -507,16 +532,22 @@ export default function ModalCadastroUsuario({
                                 />
                             </div>
 
-                            {estaVisualizandoUsuario && (
-                                <div className="md:col-span-12">
-                                    <VinculoUsuarioEmpresa
-                                        form="usuario"
-                                        idUsuario={idUsuario}
-                                        nomeContexto={formulario.nome}
-                                    />
+                            </div>
+                        )}
+
+                        {abaAtiva === "empresas" && (
+                            estaVisualizandoUsuario ? (
+                                <VinculoUsuarioEmpresa
+                                    form="usuario"
+                                    idUsuario={idUsuario}
+                                    nomeContexto={formulario.nome}
+                                />
+                            ) : (
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                    Salve o registro antes de gerenciar os vínculos.
                                 </div>
-                            )}
-                        </div>
+                            )
+                        )}
                     </Modal.Body>
 
                     <Modal.Footer>

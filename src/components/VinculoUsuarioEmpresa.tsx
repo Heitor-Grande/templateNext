@@ -55,12 +55,6 @@ type EmpresaVinculoApi = VinculoApi & {
     cnpj: string;
 };
 
-type UsuarioDisponivelApi = {
-    id: number;
-    nome: string;
-    email: string;
-};
-
 type EmpresaDisponivelApi = {
     id: number;
     fantasia: string;
@@ -69,13 +63,6 @@ type EmpresaDisponivelApi = {
 
 function obterListaDados<TipoItem>(dados: unknown): TipoItem[] {
     return Array.isArray(dados) ? dados as TipoItem[] : [];
-}
-
-function criarOpcoesUsuarios(usuarios: UsuarioDisponivelApi[]): OpcaoVinculo[] {
-    return usuarios.map((usuario) => ({
-        label: `${usuario.nome} - ${usuario.email}`,
-        value: String(usuario.id),
-    }));
 }
 
 function criarOpcoesEmpresas(empresas: EmpresaDisponivelApi[]): OpcaoVinculo[] {
@@ -131,7 +118,7 @@ export default function VinculoUsuarioEmpresa({
     const possuiContextoSalvo = typeof idContexto === "number" && idContexto > 0;
     const tituloSecao = estaNoFormularioEmpresa ? "Usuários vinculados" : "Empresas vinculadas";
     const textoAuxiliar = estaNoFormularioEmpresa
-        ? "Selecione usuários ativos para vincular à empresa atual."
+        ? "Consulte os usuários vinculados à empresa atual."
         : "Selecione empresas ativas para vincular ao usuário atual.";
     const labelContextoFixo = estaNoFormularioEmpresa ? "Empresa atual" : "Usuário atual";
     const valorContextoFixo = nomeContexto || (possuiContextoSalvo ? "Registro em edição" : "Salve o registro para gerenciar vínculos");
@@ -166,19 +153,18 @@ export default function VinculoUsuarioEmpresa({
             const respostaVinculos = await requisitarAPI(`/api/empresas/usuarios?${parametroContexto}`, {
                 method: "GET",
             });
-            const respostaDisponiveis = await requisitarAPI(`/api/empresas/usuarios?${parametroContexto}&disponiveis=true`, {
-                method: "GET",
-            });
 
             if (estaNoFormularioEmpresa) {
                 const vinculos = obterListaDados<UsuarioVinculoApi>(respostaVinculos.dados);
-                const usuarios = obterListaDados<UsuarioDisponivelApi>(respostaDisponiveis.dados);
 
                 setUsuariosVinculados(vinculos.map(mapearUsuarioVinculado));
-                setOpcoesUsuarios(criarOpcoesUsuarios(usuarios));
+                setOpcoesUsuarios([]);
                 return;
             }
 
+            const respostaDisponiveis = await requisitarAPI(`/api/empresas/usuarios?${parametroContexto}&disponiveis=true`, {
+                method: "GET",
+            });
             const vinculos = obterListaDados<EmpresaVinculoApi>(respostaVinculos.dados);
             const empresas = obterListaDados<EmpresaDisponivelApi>(respostaDisponiveis.dados);
 
@@ -346,7 +332,7 @@ export default function VinculoUsuarioEmpresa({
             </div>
 
             <div className="grid gap-4 md:grid-cols-12">
-                <div className="md:col-span-5">
+                <div className={estaNoFormularioEmpresa ? "md:col-span-12" : "md:col-span-5"}>
                     <label className="block text-sm font-semibold text-slate-700" htmlFor={`vinculo-contexto-${form}`}>
                         {labelContextoFixo}
                     </label>
@@ -359,36 +345,40 @@ export default function VinculoUsuarioEmpresa({
                     />
                 </div>
 
-                <div className="md:col-span-5">
-                    <Seletor
-                        id={`vinculo-${form}`}
-                        label={labelSeletor}
-                        options={opcoesDisponiveis}
-                        value={opcaoSelecionada}
-                        onChange={(opcao) => {
-                            setOpcaoSelecionada(opcao);
-                            setMensagemValidacao("");
-                        }}
-                        placeholder={placeholderSeletor}
-                        isDisabled={carregando || !possuiContextoSalvo}
-                        isClearable
-                        className="mb-0"
-                    />
-                </div>
+                {!estaNoFormularioEmpresa && (
+                    <>
+                        <div className="md:col-span-5">
+                            <Seletor
+                                id={`vinculo-${form}`}
+                                label={labelSeletor}
+                                options={opcoesDisponiveis}
+                                value={opcaoSelecionada}
+                                onChange={(opcao) => {
+                                    setOpcaoSelecionada(opcao);
+                                    setMensagemValidacao("");
+                                }}
+                                placeholder={placeholderSeletor}
+                                isDisabled={carregando || !possuiContextoSalvo}
+                                isClearable
+                                className="mb-0"
+                            />
+                        </div>
 
-                <div className="flex items-end md:col-span-2">
-                    <Botao
-                        size="sm"
-                        label="Adicionar"
-                        icon={<FaPlus />}
-                        onClick={adicionarVinculoSelecionado}
-                        disabled={carregando || !possuiContextoSalvo}
-                        loading={carregando}
-                        variant="outline-primary"
-                        type="button"
-                        className="w-full"
-                    />
-                </div>
+                        <div className="flex items-end md:col-span-2">
+                            <Botao
+                                size="sm"
+                                label="Adicionar"
+                                icon={<FaPlus />}
+                                onClick={adicionarVinculoSelecionado}
+                                disabled={carregando || !possuiContextoSalvo}
+                                loading={carregando}
+                                variant="outline-primary"
+                                type="button"
+                                className="w-full"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
 
             {mensagemValidacao && (
@@ -419,17 +409,6 @@ export default function VinculoUsuarioEmpresa({
                                         <p className="text-sm text-slate-500">{usuario.email}</p>
                                     </div>
 
-                                    <Botao
-                                        size="sm"
-                                        label="Remover"
-                                        icon={<FaTrash />}
-                                        onClick={() => abrirConfirmacaoRemocao(usuario.vinculoId)}
-                                        disabled={carregando}
-                                        loading={false}
-                                        variant="outline-danger"
-                                        type="button"
-                                        className="w-full sm:w-auto"
-                                    />
                                 </div>
                             ))
                             : empresasVinculadas.map((empresa) => (
@@ -490,7 +469,7 @@ export default function VinculoUsuarioEmpresa({
             />
 
             <ModalConfirmacao
-                isOpen={Boolean(idVinculoParaRemover)}
+                isOpen={!estaNoFormularioEmpresa && Boolean(idVinculoParaRemover)}
                 message="Deseja realmente remover este vínculo?"
                 icon={<FaExclamationTriangle className="text-4xl text-red-600" />}
                 onConfirm={removerVinculoConfirmado}
@@ -500,7 +479,7 @@ export default function VinculoUsuarioEmpresa({
             />
 
             <ModalConfirmacao
-                isOpen={Boolean(idEmpresaPadraoParaConfirmar)}
+                isOpen={!estaNoFormularioEmpresa && Boolean(idEmpresaPadraoParaConfirmar)}
                 message="Deseja tornar esta empresa a empresa padrão do usuário?"
                 icon={<FaExclamationTriangle className="text-4xl text-blue-600" />}
                 onConfirm={tornarEmpresaPadraoConfirmada}
