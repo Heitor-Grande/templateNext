@@ -236,7 +236,6 @@ export default function ModalCadastroUsuario({
                     documento: formulario.documento,
                     perfilId: formulario.perfil?.value ?? null,
                     ativo: formulario.ativo,
-                    isAdmin: formulario.isAdmin,
                     senha: formulario.senha,
                     confirmarSenha: formulario.confirmarSenha,
                 },
@@ -441,8 +440,8 @@ export default function ModalCadastroUsuario({
                                         className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                                         type="checkbox"
                                         checked={formulario.isAdmin}
-                                        disabled={carregando}
-                                        onChange={(event) => atualizarCampoFormulario("isAdmin", event.target.checked)}
+                                        disabled
+                                        onChange={() => undefined}
                                     />
                                     <label className="text-sm font-semibold text-slate-700" htmlFor="usuario-admin">
                                         Administrador

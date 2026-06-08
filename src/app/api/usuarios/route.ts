@@ -7,7 +7,6 @@ import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { verificarEmpresaPertenceAoUsuario } from "@/utils/empresaUsuario";
 import { verificarPermissaoAPI } from "@/utils/permissoes";
 import { criarRespostaApi } from "@/utils/respostaApi";
-import { verificarUsuarioAdministrador } from "@/utils/usuarioAdmin";
 
 type UsuarioListado = {
     id: number;
@@ -40,7 +39,6 @@ type CadastroUsuarioBody = {
 type AtualizacaoUsuarioBody = CadastroUsuarioBody & {
     id?: unknown;
     ativo?: unknown;
-    isAdmin?: unknown;
 };
 
 function normalizarPerfilId(valor: unknown): number | null {
@@ -275,12 +273,6 @@ export async function POST(request: NextRequest) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
         }
 
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuarioCriador);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem cadastrar usuários.", null, 403);
-        }
-
         const nome = validarStringComConteudo(body.nome) ? body.nome.trim() : "";
         const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
         const senha = validarStringComConteudo(body.senha) ? body.senha : "";
@@ -395,12 +387,6 @@ export async function PUT(request: NextRequest) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
         }
 
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuarioAtualizacao);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem atualizar usuários.", null, 403);
-        }
-
         const id = typeof body.id === "number" ? body.id : Number(body.id);
         const nome = validarStringComConteudo(body.nome) ? body.nome.trim() : "";
         const email = validarStringComConteudo(body.email) ? body.email.trim().toLowerCase() : "";
@@ -410,7 +396,6 @@ export async function PUT(request: NextRequest) {
         const documento = normalizarCampoOpcional(body.documento);
         const perfilId = normalizarPerfilId(body.perfilId);
         const ativo = typeof body.ativo === "boolean" ? body.ativo : null;
-        const isAdmin = typeof body.isAdmin === "boolean" ? body.isAdmin : null;
 
         if (!Number.isInteger(id) || id <= 0) {
             return criarRespostaApi(false, "Informe um usuário válido para atualização.", null, 400);
@@ -448,11 +433,10 @@ export async function PUT(request: NextRequest) {
                     documento = $4,
                     perfil_id = $5,
                     ativo = coalesce($6, ativo),
-                    "isAdmin" = coalesce($7, "isAdmin"),
-                    senha_hash = coalesce($8, senha_hash),
-                    salt = coalesce($9, salt),
+                    senha_hash = coalesce($7, senha_hash),
+                    salt = coalesce($8, salt),
                     atualizado_em = now()
-                where id = $10
+                where id = $9
                 returning id
             `,
             [
@@ -462,7 +446,6 @@ export async function PUT(request: NextRequest) {
                 documento,
                 perfilId,
                 ativo,
-                isAdmin,
                 senhaCriptografada?.hash ?? null,
                 senhaCriptografada?.salt ?? null,
                 id,
@@ -511,12 +494,6 @@ export async function DELETE(request: NextRequest) {
 
         if (!idUsuarioExclusao) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
-        }
-
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuarioExclusao);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem excluir usuários.", null, 403);
         }
 
         const id = Number(request.nextUrl.searchParams.get("id"));

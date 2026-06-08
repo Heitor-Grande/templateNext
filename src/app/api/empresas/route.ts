@@ -3,7 +3,6 @@ import { consultarBancoDados } from "@/services/database";
 import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { verificarPermissaoAPI } from "@/utils/permissoes";
 import { criarRespostaApi } from "@/utils/respostaApi";
-import { verificarUsuarioAdministrador } from "@/utils/usuarioAdmin";
 import { normalizarCampoOpcional, validarEmail, validarStringComConteudo } from "@/utils/validacoes";
 
 type EmpresaListada = {
@@ -50,12 +49,6 @@ export async function DELETE(request: NextRequest) {
 
         if (!idUsuario) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
-        }
-
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem excluir empresas.", null, 403);
         }
 
         const id = Number(request.nextUrl.searchParams.get("id"));
@@ -197,12 +190,6 @@ export async function POST(request: NextRequest) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
         }
 
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem cadastrar empresas.", null, 403);
-        }
-
         const body = await request.json() as CadastroEmpresaBody;
         const fantasia = validarStringComConteudo(body.fantasia) ? body.fantasia.trim() : "";
         const cnpj = normalizarCnpj(body.cnpj);
@@ -292,12 +279,6 @@ export async function PUT(request: NextRequest) {
 
         if (!idUsuario) {
             return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
-        }
-
-        const usuarioAdministrador = await verificarUsuarioAdministrador(idUsuario);
-
-        if (!usuarioAdministrador) {
-            return criarRespostaApi(false, "Apenas usuários administradores podem atualizar empresas.", null, 403);
         }
 
         const body = await request.json() as CadastroEmpresaBody;
