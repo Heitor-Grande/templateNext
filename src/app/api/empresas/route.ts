@@ -11,9 +11,21 @@ type EmpresaListada = {
     cnpj: string;
     email: string | null;
     telefone: string | null;
+    superior_id: number | null;
+    superior_fantasia: string | null;
     ativo: boolean;
     criado_em: Date;
     atualizado_em: Date;
+};
+
+type EmpresaArvoreBanco = {
+    id: number;
+    fantasia: string;
+    superior_id: number | null;
+};
+
+type EmpresaArvoreNo = EmpresaArvoreBanco & {
+    children: EmpresaArvoreNo[];
 };
 
 type CadastroEmpresaBody = {
@@ -22,11 +34,124 @@ type CadastroEmpresaBody = {
     cnpj?: unknown;
     email?: unknown;
     telefone?: unknown;
+    superiorId?: unknown;
     ativo?: unknown;
 };
 
 function normalizarCnpj(valor: unknown): string {
     return validarStringComConteudo(valor) ? valor.replace(/\D/g, "") : "";
+}
+
+function normalizarSuperiorId(valor: unknown): number | null {
+    if (valor === null || valor === "" || typeof valor === "undefined") {
+        return null;
+    }
+
+    return Number(valor);
+}
+
+/**
+ * Confirma se a empresa superior informada pode ser usada pelo usuário autenticado.
+ * Use antes de salvar superior_id para manter vínculo, status ativo e hierarquia raiz.
+ */
+async function verificarSuperiorValido({
+    idSuperior,
+    idUsuario,
+    idEmpresaAtual,
+}: {
+    idSuperior: number | null;
+    idUsuario: number | string;
+    idEmpresaAtual?: number;
+}): Promise<boolean> {
+    if (idSuperior === null) {
+        return true;
+    }
+
+    if (!Number.isInteger(idSuperior) || idSuperior <= 0 || idSuperior === idEmpresaAtual) {
+        return false;
+    }
+
+    const resultado = await consultarBancoDados<{ id: number }>(
+        `
+            select e.id
+            from empresas e
+            inner join usuarios_empresas ue on ue.empresa_id = e.id
+            where e.id = $1
+                and ue.usuario_id = $2
+                and e.ativo = true
+                and e.superior_id is null
+            limit 1
+        `,
+        [idSuperior, idUsuario]
+    );
+
+    return Boolean(resultado.rows[0]);
+}
+
+/**
+ * Monta a árvore de empresas sem confiar em recursão infinita quando houver hierarquia inconsistente.
+ * Use para converter a lista retornada pelo SQL recursivo no contrato da visualização em árvore.
+ */
+function montarArvoreEmpresas(empresas: EmpresaArvoreBanco[]): EmpresaArvoreNo[] {
+    const empresasPorId = new Map<number, EmpresaArvoreNo>();
+    const idsComPaiRenderizado = new Set<number>();
+
+    const criariaCiclo = (idEmpresa: number, idSuperior: number | null): boolean => {
+        const idsVisitados = new Set<number>();
+        let idAtual: number | null = idSuperior;
+
+        while (idAtual) {
+            if (idAtual === idEmpresa) {
+                return true;
+            }
+
+            if (idsVisitados.has(idAtual)) {
+                return true;
+            }
+
+            idsVisitados.add(idAtual);
+            idAtual = empresasPorId.get(idAtual)?.superior_id ?? null;
+        }
+
+        return false;
+    };
+
+    empresas.forEach((empresa) => {
+        empresasPorId.set(empresa.id, {
+            ...empresa,
+            children: [],
+        });
+    });
+
+    empresasPorId.forEach((empresa) => {
+        if (!empresa.superior_id || empresa.superior_id === empresa.id) {
+            return;
+        }
+
+        const superior = empresasPorId.get(empresa.superior_id);
+
+        if (!superior) {
+            return;
+        }
+
+        if (criariaCiclo(empresa.id, empresa.superior_id)) {
+            return;
+        }
+
+        superior.children.push(empresa);
+        idsComPaiRenderizado.add(empresa.id);
+    });
+
+    const ordenarNos = (nos: EmpresaArvoreNo[]) => {
+        nos.sort((empresaAtual, proximaEmpresa) => empresaAtual.fantasia.localeCompare(proximaEmpresa.fantasia, "pt-BR"));
+        nos.forEach((empresa) => ordenarNos(empresa.children));
+    };
+
+    const raizes = Array.from(empresasPorId.values()).filter((empresa) => !idsComPaiRenderizado.has(empresa.id));
+
+    ordenarNos(raizes);
+
+    return raizes;
 }
 
 /**
@@ -70,6 +195,8 @@ export async function DELETE(request: NextRequest) {
                     cnpj,
                     email,
                     telefone,
+                    superior_id,
+                    null::varchar as superior_fantasia,
                     ativo,
                     criado_em,
                     atualizado_em
@@ -107,22 +234,32 @@ export async function GET(request: NextRequest) {
             return respostaPermissao;
         }
 
+        const idUsuario = obterIdUsuarioAutenticado(request);
+        const listarSuperiores = request.nextUrl.searchParams.get("superiores") === "true";
+        const listarArvore = request.nextUrl.searchParams.get("arvore") === "true";
         const id = Number(request.nextUrl.searchParams.get("id"));
+
+        if (!idUsuario) {
+            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
+        }
 
         if (Number.isInteger(id) && id > 0) {
             const resultadoEmpresa = await consultarBancoDados<EmpresaListada>(
                 `
                     select
-                        id,
-                        fantasia,
-                        cnpj,
-                        email,
-                        telefone,
-                        ativo,
-                        criado_em,
-                        atualizado_em
-                    from empresas
-                    where id = $1
+                        e.id,
+                        e.fantasia,
+                        e.cnpj,
+                        e.email,
+                        e.telefone,
+                        e.superior_id,
+                        superior.fantasia as superior_fantasia,
+                        e.ativo,
+                        e.criado_em,
+                        e.atualizado_em
+                    from empresas e
+                    left join empresas superior on superior.id = e.superior_id
+                    where e.id = $1
                     limit 1
                 `,
                 [id]
@@ -137,10 +274,80 @@ export async function GET(request: NextRequest) {
             return criarRespostaApi(true, "Empresa carregada com sucesso.", empresa);
         }
 
-        const idUsuario = obterIdUsuarioAutenticado(request);
+        if (listarSuperiores) {
+            const idEmpresaAtual = Number(request.nextUrl.searchParams.get("empresaAtualId"));
+            const possuiEmpresaAtual = Number.isInteger(idEmpresaAtual) && idEmpresaAtual > 0;
 
-        if (!idUsuario) {
-            return criarRespostaApi(false, "Sessão inválida ou expirada.", null, 401);
+            const resultadoSuperiores = await consultarBancoDados<EmpresaListada>(
+                `
+                    select
+                        e.id,
+                        e.fantasia,
+                        e.cnpj,
+                        e.email,
+                        e.telefone,
+                        e.superior_id,
+                        null::varchar as superior_fantasia,
+                        e.ativo,
+                        e.criado_em,
+                        e.atualizado_em
+                    from empresas e
+                    inner join usuarios_empresas ue on ue.empresa_id = e.id
+                    where ue.usuario_id = $1
+                        and e.ativo = true
+                        and e.superior_id is null
+                        and ($2::bigint is null or e.id <> $2)
+                    order by e.fantasia asc
+                `,
+                [idUsuario, possuiEmpresaAtual ? idEmpresaAtual : null]
+            );
+
+            return criarRespostaApi(true, "Empresas superiores listadas com sucesso.", resultadoSuperiores.rows);
+        }
+
+        if (listarArvore) {
+            const resultadoArvore = await consultarBancoDados<EmpresaArvoreBanco>(
+                `
+                    with recursive empresas_vinculadas as (
+                        select
+                            e.id,
+                            e.fantasia,
+                            e.superior_id
+                        from empresas e
+                        inner join usuarios_empresas ue on ue.empresa_id = e.id
+                        where ue.usuario_id = $1
+                    ),
+                    empresas_arvore as (
+                        select
+                            ev.id,
+                            ev.fantasia,
+                            ev.superior_id,
+                            array[ev.id] as caminho
+                        from empresas_vinculadas ev
+
+                        union
+
+                        select
+                            superior.id,
+                            superior.fantasia,
+                            superior.superior_id,
+                            empresas_arvore.caminho || superior.id
+                        from empresas superior
+                        inner join empresas_arvore on empresas_arvore.superior_id = superior.id
+                        where not superior.id = any(empresas_arvore.caminho)
+                    )
+                    select distinct
+                        id,
+                        fantasia,
+                        superior_id
+                    from empresas_arvore
+                    order by superior_id nulls first,
+                        fantasia asc
+                `,
+                [idUsuario]
+            );
+
+            return criarRespostaApi(true, "Árvore de empresas carregada com sucesso.", montarArvoreEmpresas(resultadoArvore.rows));
         }
 
         const resultado = await consultarBancoDados<EmpresaListada>(
@@ -151,10 +358,13 @@ export async function GET(request: NextRequest) {
                     e.cnpj,
                     e.email,
                     e.telefone,
+                    e.superior_id,
+                    superior.fantasia as superior_fantasia,
                     e.ativo,
                     e.criado_em,
                     e.atualizado_em
                 from empresas e
+                left join empresas superior on superior.id = e.superior_id
                 inner join usuarios_empresas ue on ue.empresa_id = e.id
                 where ue.usuario_id = $1
                 order by e.criado_em desc
@@ -195,6 +405,7 @@ export async function POST(request: NextRequest) {
         const cnpj = normalizarCnpj(body.cnpj);
         const email = normalizarCampoOpcional(body.email)?.toLowerCase() ?? null;
         const telefone = normalizarCampoOpcional(body.telefone);
+        const superiorId = normalizarSuperiorId(body.superiorId);
         const ativo = obterBooleanoAtivo(body.ativo);
 
         if (!fantasia || fantasia.length > 160 || cnpj.length !== 14) {
@@ -209,6 +420,15 @@ export async function POST(request: NextRequest) {
             return criarRespostaApi(false, "Telefone deve respeitar o limite de caracteres.", null, 400);
         }
 
+        const superiorValido = await verificarSuperiorValido({
+            idSuperior: superiorId,
+            idUsuario: idUsuario,
+        });
+
+        if (!superiorValido) {
+            return criarRespostaApi(false, "Informe uma empresa superior válida.", null, 400);
+        }
+
         const resultado = await consultarBancoDados<EmpresaListada>(
             `
                 insert into empresas (
@@ -216,20 +436,23 @@ export async function POST(request: NextRequest) {
                     cnpj,
                     email,
                     telefone,
+                    superior_id,
                     ativo,
                     criado_por
                 )
-                values ($1, $2, $3, $4, $5, $6)
+                values ($1, $2, $3, $4, $5, $6, $7)
                 returning id,
                     fantasia,
                     cnpj,
                     email,
                     telefone,
+                    superior_id,
+                    null::varchar as superior_fantasia,
                     ativo,
                     criado_em,
                     atualizado_em
             `,
-            [fantasia, cnpj, email, telefone, ativo, idUsuario]
+            [fantasia, cnpj, email, telefone, superiorId, ativo, idUsuario]
         );
 
         await consultarBancoDados(
@@ -287,6 +510,7 @@ export async function PUT(request: NextRequest) {
         const cnpj = normalizarCnpj(body.cnpj);
         const email = normalizarCampoOpcional(body.email)?.toLowerCase() ?? null;
         const telefone = normalizarCampoOpcional(body.telefone);
+        const superiorId = normalizarSuperiorId(body.superiorId);
         const ativo = obterBooleanoAtivo(body.ativo);
 
         if (!Number.isInteger(id) || id <= 0) {
@@ -305,6 +529,16 @@ export async function PUT(request: NextRequest) {
             return criarRespostaApi(false, "Telefone deve respeitar o limite de caracteres.", null, 400);
         }
 
+        const superiorValido = await verificarSuperiorValido({
+            idSuperior: superiorId,
+            idUsuario: idUsuario,
+            idEmpresaAtual: id,
+        });
+
+        if (!superiorValido) {
+            return criarRespostaApi(false, "Informe uma empresa superior válida.", null, 400);
+        }
+
         const resultado = await consultarBancoDados<EmpresaListada>(
             `
                 update empresas
@@ -313,20 +547,23 @@ export async function PUT(request: NextRequest) {
                     cnpj = $2,
                     email = $3,
                     telefone = $4,
-                    ativo = $5,
-                    atualizado_por = $6,
+                    superior_id = $5,
+                    ativo = $6,
+                    atualizado_por = $7,
                     atualizado_em = now()
-                where id = $7
+                where id = $8
                 returning id,
                     fantasia,
                     cnpj,
                     email,
                     telefone,
+                    superior_id,
+                    null::varchar as superior_fantasia,
                     ativo,
                     criado_em,
                     atualizado_em
             `,
-            [fantasia, cnpj, email, telefone, ativo, idUsuario, id]
+            [fantasia, cnpj, email, telefone, superiorId, ativo, idUsuario, id]
         );
 
         if (!resultado.rows[0]) {

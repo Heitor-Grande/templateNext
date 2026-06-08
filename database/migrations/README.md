@@ -94,6 +94,7 @@ Campos:
 - `cnpj`: CNPJ da empresa com 14 dígitos.
 - `email`: e-mail opcional.
 - `telefone`: telefone opcional.
+- `superior_id`: empresa superior opcional, permitindo `null`.
 - `ativo`: status da empresa.
 - `criado_em`: data de criação.
 - `atualizado_em`: data da última atualização.
@@ -105,6 +106,8 @@ Campos:
 - `empresas_pkey`: chave primária em `id`.
 - `empresas_criado_por_fkey`: FK de `criado_por` para `usuarios.id`.
 - `empresas_atualizado_por_fkey`: FK de `atualizado_por` para `usuarios.id`.
+- `empresas_superior_id_fkey`: FK de `superior_id` para `empresas.id`.
+- `empresas_superior_id_idx`: índice para `superior_id`.
 - `empresas_cnpj_unico_idx`: índice único para `cnpj`.
 - `empresas_criado_por_idx`: índice para `criado_por`.
 - `empresas_atualizado_por_idx`: índice para `atualizado_por`.

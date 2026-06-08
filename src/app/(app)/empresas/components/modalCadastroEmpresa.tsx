@@ -2,6 +2,7 @@
 
 import { Botao } from "@/components/inputs/button";
 import { CampoTexto } from "@/components/inputs/input";
+import { Seletor } from "@/components/inputs/select";
 import VinculoUsuarioEmpresa from "@/components/VinculoUsuarioEmpresa";
 import ModalConfirmacao from "@/components/modals/confirmModal";
 import { ModalCarregamento } from "@/components/modals/loading";
@@ -17,9 +18,15 @@ type DadosCadastroEmpresa = {
     cnpj: string;
     email: string;
     telefone: string;
+    superior: OpcaoSuperior | null;
     ativo: boolean;
     criadoEm: string;
     atualizadoEm: string;
+};
+
+type OpcaoSuperior = {
+    label: string;
+    value: string;
 };
 
 type EmpresaDetalhadaApi = {
@@ -28,6 +35,8 @@ type EmpresaDetalhadaApi = {
     cnpj: string;
     email: string | null;
     telefone: string | null;
+    superior_id: number | null;
+    superior_fantasia: string | null;
     ativo: boolean;
     criado_em: string;
     atualizado_em: string;
@@ -45,6 +54,7 @@ const estadoInicialFormulario: DadosCadastroEmpresa = {
     cnpj: "",
     email: "",
     telefone: "",
+    superior: null,
     ativo: true,
     criadoEm: "",
     atualizadoEm: "",
@@ -78,6 +88,12 @@ function mapearEmpresaParaFormulario(empresa: EmpresaDetalhadaApi): DadosCadastr
         cnpj: formatarCnpj(empresa.cnpj),
         email: empresa.email || "",
         telefone: empresa.telefone || "",
+        superior: empresa.superior_id
+            ? {
+                label: empresa.superior_fantasia || "Empresa superior",
+                value: String(empresa.superior_id),
+            }
+            : null,
         ativo: empresa.ativo,
         criadoEm: formatarDataHoraFormulario(empresa.criado_em),
         atualizadoEm: formatarDataHoraFormulario(empresa.atualizado_em),
@@ -98,15 +114,36 @@ export default function ModalCadastroEmpresa({
     const [textoCarregamento, setTextoCarregamento] = useState("Processando solicitação...");
     const [mensagemResposta, setMensagemResposta] = useState("");
     const [modalConfirmacaoExclusaoAberto, setModalConfirmacaoExclusaoAberto] = useState(false);
+    const [opcoesSuperior, setOpcoesSuperior] = useState<OpcaoSuperior[]>([]);
 
     const estaVisualizandoEmpresa = typeof idEmpresa === "number" && idEmpresa > 0;
 
-    function atualizarCampoFormulario(campo: keyof DadosCadastroEmpresa, valor: string | boolean) {
+    function atualizarCampoFormulario(campo: keyof DadosCadastroEmpresa, valor: string | boolean | OpcaoSuperior | null) {
         setFormulario((estadoAtual) => ({
             ...estadoAtual,
             [campo]: campo === "cnpj" && typeof valor === "string" ? formatarCnpj(valor) : valor,
         }));
     }
+
+    /**
+     * Carrega empresas raiz vinculadas ao usuário para seleção como superior.
+     */
+    const carregarEmpresasSuperiores = useCallback(async () => {
+        try {
+            const parametroEmpresaAtual = idEmpresa ? `&empresaAtualId=${idEmpresa}` : "";
+            const resposta = await requisitarAPI(`/api/empresas?superiores=true${parametroEmpresaAtual}`, {
+                method: "GET",
+            });
+            const empresas = Array.isArray(resposta.dados) ? resposta.dados as EmpresaDetalhadaApi[] : [];
+
+            setOpcoesSuperior(empresas.map((empresa) => ({
+                label: empresa.fantasia,
+                value: String(empresa.id),
+            })));
+        } catch {
+            setMensagemResposta("Não foi possível carregar as empresas superiores.");
+        }
+    }, [idEmpresa]);
 
     const carregarEmpresaSelecionada = useCallback(async () => {
         if (!idEmpresa) {
@@ -145,6 +182,7 @@ export default function ModalCadastroEmpresa({
         setMensagemResposta("");
         setCarregando(false);
         setModalConfirmacaoExclusaoAberto(false);
+        setOpcoesSuperior([]);
     }
 
     function fecharModalCadastroEmpresa() {
@@ -166,6 +204,7 @@ export default function ModalCadastroEmpresa({
                     cnpj: formulario.cnpj,
                     email: formulario.email,
                     telefone: formulario.telefone,
+                    superiorId: formulario.superior?.value ?? null,
                     ativo: formulario.ativo,
                 },
             });
@@ -217,6 +256,8 @@ export default function ModalCadastroEmpresa({
         }
 
         const carregamentoInicial = window.setTimeout(() => {
+            void carregarEmpresasSuperiores();
+
             if (!idEmpresa) {
                 setFormulario(estadoInicialFormulario);
                 setMensagemResposta("");
@@ -227,7 +268,7 @@ export default function ModalCadastroEmpresa({
         }, 0);
 
         return () => window.clearTimeout(carregamentoInicial);
-    }, [aberto, idEmpresa, carregarEmpresaSelecionada]);
+    }, [aberto, idEmpresa, carregarEmpresaSelecionada, carregarEmpresasSuperiores]);
 
     return (
         <>
@@ -303,7 +344,21 @@ export default function ModalCadastroEmpresa({
                                 />
                             </div>
 
-                            <div className="md:col-span-12">
+                            <div className="md:col-span-6">
+                                <Seletor
+                                    id="empresa-superior"
+                                    label="Superior"
+                                    options={opcoesSuperior}
+                                    value={formulario.superior}
+                                    onChange={(opcao) => atualizarCampoFormulario("superior", opcao)}
+                                    placeholder="Nenhum superior"
+                                    isDisabled={carregando}
+                                    isClearable
+                                    className="mb-0"
+                                />
+                            </div>
+
+                            <div className="md:col-span-6">
                                 <div className="flex items-center gap-3">
                                     <input
                                         id="empresa-ativo"

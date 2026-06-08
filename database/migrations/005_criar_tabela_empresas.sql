@@ -23,6 +23,25 @@ create index if not exists empresas_criado_por_idx
 create index if not exists empresas_atualizado_por_idx
     on public.empresas using btree (atualizado_por);
 
+alter table public.empresas
+    add column if not exists superior_id bigint null;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'empresas_superior_id_fkey'
+    ) then
+        alter table public.empresas
+            add constraint empresas_superior_id_fkey
+            foreign key (superior_id) references public.empresas (id);
+    end if;
+end $$;
+
+create index if not exists empresas_superior_id_idx
+    on public.empresas using btree (superior_id);
+
 do $$
 begin
     if not exists (
