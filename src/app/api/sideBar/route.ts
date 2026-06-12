@@ -3,15 +3,18 @@ import { consultarBancoDados } from "@/services/database";
 import { obterIdUsuarioAutenticado } from "@/utils/autenticacao";
 import { criarRespostaApi } from "@/utils/respostaApi";
 
-type RecursoPermissao = "dashboard" | "usuario" | "empresa" | "configuracao" | "perfil";
+type RecursoPermissao = "dashboard" | "usuario" | "empresa" | "produto_empresa" | "configuracao" | "perfil" | "ticket";
 type AcaoPermissao = "visualizar" | "criar" | "atualizar" | "deletar";
 type PermissoesPerfil = Record<RecursoPermissao, Record<AcaoPermissao, boolean>>;
 
 type VerificacaoSideBar = {
+    nome_usuario: string;
+    email_usuario: string;
     usuario_ativo: boolean;
     disponibilidade: string | null;
     fantasia: string | null;
     perfil_id: number | null;
+    nome_perfil: string | null;
     perfil_ativo: boolean | null;
     permissoes: PermissoesPerfil | null;
 };
@@ -35,6 +38,11 @@ type EmpresaUsuarioBanco = {
 type DadosVerificacaoSideBar = {
     acessoPermitido: boolean;
     fantasiaEmpresa: string;
+    usuario: {
+        nome: string;
+        email: string;
+        perfilNome: string;
+    } | null;
     permissoes: PermissoesPerfil | null;
     empresasUsuario: EmpresaUsuarioSideBar[];
 };
@@ -54,6 +62,7 @@ export async function GET(request: NextRequest) {
                 {
                     acessoPermitido: false,
                     fantasiaEmpresa: "",
+                    usuario: null,
                     permissoes: null,
                     empresasUsuario: [],
                 },
@@ -64,10 +73,13 @@ export async function GET(request: NextRequest) {
         const resultado = await consultarBancoDados<VerificacaoSideBar>(
             `
                 select
+                    u.nome as nome_usuario,
+                    u.email as email_usuario,
                     coalesce(u.ativo, false) as usuario_ativo,
                     c.disponibilidade,
                     c.fantasia,
                     u.perfil_id,
+                    p.nome as nome_perfil,
                     p.ativo as perfil_ativo,
                     p.permissoes
                 from usuarios u
@@ -101,6 +113,13 @@ export async function GET(request: NextRequest) {
                 {
                     acessoPermitido: false,
                     fantasiaEmpresa: verificacao?.fantasia ?? "",
+                    usuario: verificacao
+                        ? {
+                            nome: verificacao.nome_usuario,
+                            email: verificacao.email_usuario,
+                            perfilNome: verificacao.nome_perfil ?? "Sem perfil",
+                        }
+                        : null,
                     permissoes: null,
                     empresasUsuario: [],
                 },
@@ -141,6 +160,11 @@ export async function GET(request: NextRequest) {
             {
                 acessoPermitido: true,
                 fantasiaEmpresa: verificacao.fantasia ?? "GSD Desk",
+                usuario: {
+                    nome: verificacao.nome_usuario,
+                    email: verificacao.email_usuario,
+                    perfilNome: verificacao.nome_perfil ?? "Sem perfil",
+                },
                 permissoes: verificacao.permissoes,
                 empresasUsuario,
             }
@@ -153,6 +177,7 @@ export async function GET(request: NextRequest) {
             {
                 acessoPermitido: false,
                 fantasiaEmpresa: "",
+                usuario: null,
                 permissoes: null,
                 empresasUsuario: [],
             },
